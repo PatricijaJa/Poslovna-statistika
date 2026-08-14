@@ -1,0 +1,48 @@
+---
+title: "Projekt - Airline Loyalty Program Promotion and Beyond"
+author: "Manca Prošek, Tristan Dragan, Patricija Jaklič"
+date: "2026-08-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r knjiznice, include=FALSE}
+library(readr)
+library(DataExplorer)
+```
+
+# Branje podatkov
+
+## 1. Customer Flight Activity.csv
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
+```
+
+```{r}
+create_report(Customer_Flight_Activity)
+```
+
+## 2. Customer Loyalty History.csv
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
+```
+
+```{r}
+create_report(Customer_Loyalty_History)
+```
+
+
+# Viri
+
+# Ocena kakovosti podatkov
+
+# Vizualizacija
+
+# (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
+
+# (Tristan) Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
+
+# (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
