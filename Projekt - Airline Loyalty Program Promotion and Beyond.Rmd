@@ -21,8 +21,15 @@ library(DataExplorer)
 Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
 ```
 
+Osnovne lastnosti:
+Št. vrstic: 392,936
+Št. stolpcev: 8
+Ni manjkajočih podatkov/vrstic
+Vse spremenljivke so numerične
+Vse spremenljivke razen Loyalty Number in Month so asimetrične v desno.
+
 ```{r}
-create_report(Customer_Flight_Activity)
+pregled_CFA <- create_report(Customer_Flight_Activity)
 ```
 
 ## 2. Customer Loyalty History.csv
@@ -30,15 +37,87 @@ create_report(Customer_Flight_Activity)
 Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
 ```
 
+Osnovne lastnosti:
+Št. vrstic: 16,737
+Št. stolpcev: 16
+Št. manjkajočih podatkov: 33,578
+Št. popolnih vrstic: 1,540
+Št. numeričnih spremenljivk: 7
+Št. opisnih spremenljivk: 9
+Spremenljivke z manjkajočimi vrednostmi so: Salary (25.32%), Cancellation Month (87.65%) in Cancellation Year (87.65%).
+
 ```{r}
-create_report(Customer_Loyalty_History)
+pregled_CLH <- create_report(Customer_Loyalty_History)
 ```
 
 
 # Viri
 
-# Ocena kakovosti podatkov
+## Customer churn-----------------------------------------
 
+## 1. članek/vir (osnove customer churn): Customer Churn Prediction: A Systematic Review of Recent Advances, Trends, and Challenges in Machine Learning and Deep Learning
+*Imani, M., Joudaki, M., Beikmohammadi, A., & Arabnia, H. R. (2025)*
+Link: [1.clanek] (www.mdpi.com/2504-4990/7/3/105?utm_source=chatgpt.com)
+
+## 2. članek/vir: An asymmetrical approach to understanding con gurations of customer loyalty in the airline industry
+*Catherine Prenticea, Sandra Maria Correia Loureirob*
+Link: [2.clanek] (https://www.sciencedirect.com/science/article/pii/S0969698917301789?fr=RR-1&ref=cra_js_challenge)
+
+## 3. članek/vir: Key drivers of passenger loyalty: A case of Frankfurt–Istanbul flights. (2016).
+*Journal of Air Transport Management*
+Link: [3.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0969699715300120?utm_source=chatgpt.com)
+
+## 4. članek/vir: Frequent flyer programs in academic studies: A literature review of research progress since 2000. (2025).
+*Journal of Air Transport Management.*
+Link: [4.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0969699725001838?utm_source=chatgpt.com)
+
+## 5. članek/vir: In Pursuit of Enhanced Customer Retention Management: Review, Key Issues, and Future Directions
+*Ascarza, E., Neslin, S. A., Netzer, O., et al. (2018)*
+Link: [5.clanek]
+(https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
+
+# Ocena kakovosti podatkov
+# Magisterska naloga-Janez-Bijec--------------------------------
+Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki kakovosti in učinkoviotsti oskrbe pacientov s koronarno boleznijo
+
+Izpiski:
+- Kdaj so podatki kakovostni? Kadar so "fit for purpose"
+- ocenjevanje kakovosti podatkov prilagodit vsaki analizi posebaj glede na njene zahteve
+- Avtor v svoji analizi uporabi dva načina:
+        - 1. Na podlagi modela ocenjevanja in terminologije dimenzij            kakovosti (prilagojen za elektronske zdravstvene podatke) 
+        (*skladnost*, *celovitost*, *prepričljivost - verjetnost*)
+        - 2. konceptualni način
+        
+## MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
+a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna skladnost, relacijska skladnost, računska skladnost)
+  - VREDNOSTNA skladnost: spol ima samo dve vrednosti, starost nima negativnih vrednosti,...
+  - RELACIJSKA skladnost: omogočanje relacije med tabelami v bazi podatkov
+  - RAČUNSKA pravilnost izpeljanih spremenljivk
+  
+b. CELOVITOST - dimenzija kakovosti, ki ocenjuje prisotnost oz. odsotnost (tudi frekvenco podatkov) ne da bi se ozirala na vrednosti, ki jih podatki zavzemajo.
+Ta dimenzija kakovosti nima poddimenzij.
+
+c. PREPRIČLJIVOST - VERJETNOST: dimenzija kakovosti, ki osredotoča na same vrednosti, ki jih zavzemajo (imajo podatki) in poskuša odgovoriti na vprašanje, kako vrednosti podatkov opisujejo realno stanje, koliko jim je mogoče zaupati.
+
+Poddimenzije:
+  - UNIKATNA PREPRIČLJIVOST (angl. Uniquness plausibility)
+podvajanje podatkov, tam kjer niso smiselni (npr. en identifikator pacienta je povezan z dvema spoloma ali dvema različnima glavnima diagnozama za isto hospitalizacijo)
+  - NEČASOVNA PREPRIČLJIVOST (angl. Atemporal plausibility)
+Povezana z oceno koliko se vrednosti in porazdelitve vrednosti skladajo glede na neko splošno vedenje ali glede na nek zunanju standard. (npr. telesne višine pacientov se porazdeljuje normalno s povprečjem 170 cim in standardnim odklonom 15cm)
+  - ČASOVNA PREPLIČLJIVOST (angl. Temporal plausibility)
+Smiselnost in pravilnost spreminjanja ali ohranjanja vrednosti spremenljivk glede 
+na čas (npr. ali je telesna višina pri večini pacientov v adolescenci smiselno naraščala, odraslega pacienta pa ostala nespremenljena)
+
+## Ocenjevanje dimenzij kakovosti-----------------
+
+## 1. VERTIFIKACIJA (angl. Vertification)
+Temelji
+## 2. VALIDACIJA (angl. Validation)
+
+
+        
 # Vizualizacija
 
 # (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
