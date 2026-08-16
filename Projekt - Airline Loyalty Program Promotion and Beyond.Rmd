@@ -7,11 +7,13 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
 ```
 
 ```{r knjiznice, include=FALSE}
 library(readr)
 library(DataExplorer)
+library(ggplot2)
 ```
 
 # Branje podatkov
@@ -78,6 +80,12 @@ Link: [4.clanek]
 Link: [5.clanek]
 (https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
 
+## 6. članek/vir: Beyond Accuracy: What Data Quality Means to Data Consumers. (2015) 
+*Richard Y. Wang & Diane M. Strong*
+Link: [5.clanek]
+(https://www.tandfonline.com/doi/abs/10.1080/07421222.1996.11518099)
+-> Kakovost podatkov
+
 # Ocena kakovosti podatkov
 
 # Magisterska naloga-Janez-Bijec--------------------------------
@@ -127,6 +135,44 @@ Ideja Weng in Casey -> predpostavka merljivih konceptov v medicini
 
 #OCENA-KAKOVOSTI-PODATKOV-----------------------------
 
+Kakovost podatkov bomo preverili na podlagi šestih najbolj uporabljenih dimenzij od petnajstih, ki so navedeni v (6.članku). Odločili smo se za šest dimenzij na podlagi literature in praks.
+
+Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali pri naši analizi so:
+1.Natančnost ali točnost\
+2.Celovitost\
+3.Doslednost\
+4.Pravočasnost\
+5.Veljavnost\
+6.Enoličnost
+
+## Natančnost podatkov
+
+"Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz resničnega sveta.
+Natančnost podatkov se osredotoča na pravilnost in zanesljivost podatkov ter zagotavlja, da ti ne vsebujejo napak, ki bi nastale zaradi nepravilnega vnosa ali pomanjkljive obdelave.
+Primarni cilj zagotavljanja točnosti podatkov je prepoznavanje in odpravljanje napak v podatkovnih vrednostih, kot so napake pri prepisovanju, podvojeni vnosi in napačne vrednosti.
+Točnost podatkov se dosega z uporabo: – čiščenja podatkov za prepoznavanje in odpravljanje napak ter neskladnosti v naborih podatkov, kot so odstranjevanje podvojenih zapisov, popravljanje tipkarskih napak in standardizacija podatkov; – preverjanja veljavnosti podatkov s pomočjo vnaprej določenih pravil ali algoritmov za odkrivanje napak, neskladnosti in netočnosti v podatkih med postopkom vnosa ali naknadno; – profiliranja podatkov za prepoznavanje vzorcev, trendov in nepravilnosti v naborih podatkov, ki lahko kažejo na netočnosti ali neskladnosti."
+
+Za naše podatke nimamo zunanjih referenčnih virov s katerim bi lahko naredili neposredno primerjavo podatkov za preverjanje točnosti podatkov, ker nimamo neodvisnega vira točnosti podatkov ne moremo empirično dokazati. Zato bomo v nadaljevanju preverjali logična pravila in potencialne napačne oz ekstremne vrednosti. 
+```{r kvalitetaPodatkov_Natančnost}
+summary(Customer_Flight_Activity)
+```
+
+```{r}
+summary(Customer_Loyalty_History)
+```
+
+Pri spremenljivki 'Salary' je videti negativno vrednost, kar ni mogoče, zaradi obstoja minimalne plače in ker bi negativna vrednost pomenila, da moremo mi plačevati delodajalcu mesečno plačo.
+
+```{r}
+ggplot(Customer_Loyalty_History, aes(x = Salary)) +
+  geom_histogram(binwidth=10000) +
+  theme(panel.grid = element_blank()) +
+  labs(
+    title = "Porazdelitev spremenljivke Salary",
+    x = "Salary",
+    y = NULL
+  )
+```
 
 
 # Vizualizacija
