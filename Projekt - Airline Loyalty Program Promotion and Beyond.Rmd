@@ -21,7 +21,7 @@ library(DataExplorer)
 Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
 ```
 
-Osnovne lastnosti:
+Osnovne lastnosti podatkov (Customer Flight Activity):
 Št. vrstic: 392,936
 Št. stolpcev: 8
 Ni manjkajočih podatkov/vrstic
@@ -37,7 +37,7 @@ pregled_CFA <- create_report(Customer_Flight_Activity)
 Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
 ```
 
-Osnovne lastnosti:
+Osnovne lastnosti podatkov (Customer Loyalty History):
 Št. vrstic: 16,737
 Št. stolpcev: 16
 Št. manjkajočih podatkov: 33,578
@@ -79,6 +79,7 @@ Link: [5.clanek]
 (https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
 
 # Ocena kakovosti podatkov
+
 # Magisterska naloga-Janez-Bijec--------------------------------
 Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki kakovosti in učinkoviotsti oskrbe pacientov s koronarno boleznijo
 
@@ -90,6 +91,8 @@ Izpiski:
         (*skladnost*, *celovitost*, *prepričljivost - verjetnost*)
         - 2. konceptualni način
         
+##1.NAČIN--------------------------------------------
+
 ## MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
 a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna skladnost, relacijska skladnost, računska skladnost)
   - VREDNOSTNA skladnost: spol ima samo dve vrednosti, starost nima negativnih vrednosti,...
@@ -113,8 +116,16 @@ na čas (npr. ali je telesna višina pri večini pacientov v adolescenci smiseln
 ## Ocenjevanje dimenzij kakovosti-----------------
 
 ## 1. VERTIFIKACIJA (angl. Vertification)
-Temelji
+Temelji na podatkih kot takih na smiselnosti na ujemanju z omejitvami in strukturo na ekspertnih mnenjih in logičnih povezavah.
 ## 2. VALIDACIJA (angl. Validation)
+Temelji na preverjanju podatkov glede na nek zunanji vir, ki lahko predstavlja zlati standard.
+
+##2.NAČIN-KONCEPTUALNI--------------------------------------------
+
+Avtor poskuša odkriti določene sistemske pomanjklivosti v podatkih.
+Ideja Weng in Casey -> predpostavka merljivih konceptov v medicini 
+
+#OCENA-KAKOVOSTI-PODATKOV-----------------------------
 
 
 
