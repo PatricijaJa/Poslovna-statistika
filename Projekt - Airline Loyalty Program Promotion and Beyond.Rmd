@@ -14,6 +14,12 @@ options(scipen = 999)
 library(readr)
 library(DataExplorer)
 library(ggplot2)
+library(tidyr)
+library(knitr)
+library(tinytex)
+library(tidyverse)
+library(lubridate)
+library(skimr)
 ```
 
 # Branje podatkov
@@ -175,9 +181,351 @@ ggplot(Customer_Loyalty_History, aes(x = Salary)) +
 ```
 
 
+## Kakovost podatkov - neurejena Manca koda
+
+```{r}
+## -------------------------------------------------------------------------
+## 2. KAKOVOST PODATKOV
+## -------------------------------------------------------------------------
+
+flight <- Customer_Flight_Activity
+loyalty <- Customer_Loyalty_History
+
+# 2a. Manjkajoče vrednosti
+skim(flight)
+skim(loyalty)
+
+# Delež NA po stolpcu
+map_dbl(loyalty, ~mean(is.na(.))) %>% sort(decreasing = TRUE)
+```
+
+V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih vrednosti ter hitre histogramske porazdelitve posamičnih spremenljivk. Medtem ko pri podatkih o članih programa opazimo, da imamo manjkajoče vrednosti pri spremenljivki Salary in pa seveda pri spremenljivkama Cancellation Year in Month, ki pa niso manjkajoči podatki, vendar so to še aktualni člani in podatka enostavno ni. Tudi v teh podatkih lahko pogledamo histograme porazdelitev številskih spremenljivk.
+
+V nadaljnem smo pogledali le še delež manjkajočih vrednosti in opazimo, da je 87.6% vseh članov še vedno aktivnih, kar je super odstotek in da nam pri spremenljivki o plačah manjka 25% vrednosti. To so dejankse manjkajoče vrednosti, ki si jih želimo še malo bolj natančno pogledati, ali obstaja kakšen vzorec manjkajočnosti.
+
+```{r}
+# 2b. Dvojniki po ključu
+loyalty %>% count(`Loyalty Number`) %>% filter(n > 1) # naj bo prazno - 1 vrstica na stranko
+flight  %>% count(`Loyalty Number`, Year, Month) %>% filter(n > 1) # naj bo prazno
+```
+
+Velik kazatelj kvalitetnih podatkov je tudi unikatnost vnosov, ker imamo namreč osebne podatke v eni datoteki, se tam dvojniki po številki zvestobe ne bi smeli prikazovati, prav tako bi v datoteki z leti vsak član moral imeti za vsak mesec v letu le en vnos.
+
+V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar veliko dvojnih vnosov v tabeli z leti, kar je lahko slab kazatelj kakovosti podatkov, ki pa zahteva nadaljni vpogled.
+
+
+```{r}
+# 2c. Ali imajo vsi poleti veljavno stranko v loyalty tabeli? (referenčna integriteta)
+anti_join(flight, loyalty, by = "Loyalty Number") %>% nrow()
+
+# 2d. Osamelci / nesmiselne vrednosti
+summary(flight$`Total Flights`)
+summary(flight$Distance)
+flight %>% filter(`Total Flights` == 0 & Distance > 0) # nekonsistentnost
+flight %>% filter(`Total Flights` > 0 & Distance == 0)
+
+summary(loyalty$Salary)
+loyalty %>% filter(Salary < 0) # negativna plača = napaka?
+
+# 2e. Konsistentnost kategorij
+loyalty %>% count(`Enrollment Type`)
+loyalty %>% count(`Loyalty Card`)
+loyalty %>% count(Education)
+loyalty %>% count(`Marital Status`)
+loyalty %>% count(Gender)
+```
+
+Pogledali smo še, da imajo vsi vnosi v letih veljavno stranko, da so podatki o poletih v enem mesecu in razdalji smiselni, ter da ne obstaja vnos, ki bi imel nekonsistentno povezano razdaljo in število letov. Prav tako smo pogledali, da so plače članov programa smiselne, kjer smo opazili nekaj negativnih plač, ki jih bomo izbrisali iz vnosa in obravnavali kot manjkajoče podatke, saj ne moremo vedeti, ali so samo predznaki napaka ali je cel vnos napačen. 
+
+## Popravek podatkov - neurejena Manca koda
+
+Tole mi ni čist všeč še. Cilji so:
+- odstraniti vse lete nepopolnih dvojnikov, ker ne vemo, kateri je pravi
+- odstraniti popolne dvojnike, ker lahko zaupamo, da so vseeno pravilne vrednosti
+- odstrani negativne plače
+
+```{r}
+## -------------------------------------------------------------------------
+## 3. ČIŠČENJE PODATKOV
+## -------------------------------------------------------------------------
+
+## 3.0 Čiščenje podvojenih vrstic v flight_activity
+## -------------------------------------------------------------------------
+## Pravilo:
+##   a) Če imajo vrstice z enakim ključem (Loyalty Number, Year, Month) RAZLIČNE vrednosti drugje -> ne vemo, katera je prava, zato odstranimo VSE.
+##   b) Če so vrstice z enakim ključem POPOLNI dvojniki (identične povsod) -> zaupamo vrednosti in obdržimo eno kopijo.
+
+key_cols <- c("Loyalty Number", "Year", "Month")
+
+# Za vsako skupino preveri velikost skupine in št. dejansko različnih vrstic znotraj nje
+key_dup_summary <- flight %>%
+  group_by(across(all_of(key_cols))) %>%
+  summarise(
+    group_size        = n(),
+    n_distinct_rows    = n_distinct(pick(everything())),
+    .groups = "drop"
+  ) %>%
+  filter(group_size > 1)
+
+# Ključi, kjer je skupina POPOLN dvojnik (n_distinct_rows == 1 kljub group_size > 1)
+full_dup_keys <- key_dup_summary %>%
+  filter(n_distinct_rows == 1) %>%
+  select(all_of(key_cols))
+
+# Ključi, kjer skupina NI popoln dvojnik (vrstice se med sabo razlikujejo)
+partial_dup_keys <- key_dup_summary %>%
+  filter(n_distinct_rows > 1) %>%
+  select(all_of(key_cols))
+
+nrow(full_dup_keys)      # št. ključev s popolnimi dvojniki (obdržimo 1 kopijo)
+nrow(partial_dup_keys)   # št. ključev z nepopolnimi/sumljivimi dvojniki (odstranimo VSE)
+
+# Vpogled v primer nepopolnih dvojnikov
+flight %>%
+  semi_join(partial_dup_keys, by = key_cols) %>%
+  arrange(`Loyalty Number`, Year, Month) %>%
+  head(10)
+
+# Odstranitev:
+#   (a) vse vrstice, ki pripadajo nepopolnim/sumljivim dvojnikom
+#   (b) med preostalimi vrsticami odstranimo odvečne kopije popolnih dvojnikov
+flight_clean <- flight %>%
+  anti_join(partial_dup_keys, by = key_cols) %>%
+  distinct()
+
+# Poročilo o čiščenju
+n_total            <- nrow(flight)
+n_removed_partial  <- flight %>% semi_join(partial_dup_keys, by = key_cols) %>% nrow()
+n_removed_full_dup <- n_total - n_removed_partial - nrow(flight_clean)
+
+cat("Vrstic prej:", n_total, "\n")
+cat("Odstranjenih (nepopolni dvojniki - vse vrstice skupine):", n_removed_partial, "\n")
+cat("Odstranjenih (odvečne kopije popolnih dvojnikov):", n_removed_full_dup, "\n")
+cat("Vrstic po čiščenju:", nrow(flight_clean), "\n")
+
+# Kontrola - noben ključ naj se več ne podvaja
+flight_clean %>% count(across(all_of(key_cols))) %>% filter(n > 1)
+```
+
+
+```{r}
+## 3.1 Odstranitev negativnih plač v loyalty_history
+## -------------------------------------------------------------------------
+
+n_negative_salary <- loyalty %>% filter(Salary < 0) %>% nrow()
+n_negative_salary   # 20
+
+loyalty_clean <- loyalty %>%
+  mutate(Salary = if_else(Salary < 0, NA_real_, Salary))
+
+## 3.2 Agregacija po stranki (na podlagi flight_clean)
+## -------------------------------------------------------------------------
+
+customer_activity <- flight_clean %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    total_flights_sum    = sum(`Total Flights`, na.rm = TRUE),
+    total_distance       = sum(Distance, na.rm = TRUE),
+    points_accumulated   = sum(`Points Accumulated`, na.rm = TRUE),
+    points_redeemed      = sum(`Points Redeemed`, na.rm = TRUE),
+    dollar_cost_redeemed = sum(`Dollar Cost Points Redeemed`, na.rm = TRUE),
+    active_months        = n_distinct(paste(Year, Month)),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    redemption_rate       = if_else(points_accumulated > 0,
+                                     points_redeemed / points_accumulated, 0),
+    avg_flights_per_month = total_flights_sum / active_months
+  )
+
+df <- loyalty_clean %>%
+  left_join(customer_activity, by = "Loyalty Number") %>%
+  mutate(
+    is_promo_2018 = `Enrollment Type` == "2018 Promotion",
+    churned = !is.na(`Cancellation Year`)
+  )
+
+glimpse(df)
+```
+
+
+Sedaj nimamo nobenih podvojenih vrednosti in negativnih plač, prav tako pa smo v customer activity združili osebne podatke o strankah in povzetek njihovih letalskih aktivnosti.
+
+
+
 # Vizualizacija
 
 # (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
+
+## Učinkovitost 2018 promocije
+
+```{r}
+## -------------------------------------------------------------------------
+## 4. UČINKOVITOST 2018 PROMOCIJE (primerjava skupin)
+## -------------------------------------------------------------------------
+
+# Opisna statistika po skupinah
+df %>%
+  group_by(`Enrollment Type`) %>%
+  summarise(
+    n = n(),
+    povp_flights   = mean(total_flights_sum, na.rm = TRUE),
+    povp_distance  = mean(total_distance, na.rm = TRUE),
+    povp_CLV       = mean(CLV, na.rm = TRUE),
+    povp_accumulated = mean(points_accumulated, na.rm = TRUE),
+    povp_redeemed     = mean(points_redeemed, na.rm = TRUE),
+    povp_redemption_rate = mean(redemption_rate, na.rm = TRUE),
+    povp_dollar_redeemed = mean(dollar_cost_redeemed, na.rm = TRUE),
+    churn_rate     = mean(churned, na.rm = TRUE)
+  )
+
+# Statistični test: CLV med Standard in 2018 Promotion (Wilcoxon, ker CLV ni nujno normalno porazdeljen)
+wilcox.test(CLV ~ `Enrollment Type`, data = df)
+
+# t-test za primerjavo povprečnega števila poletov
+t.test(total_flights_sum ~ `Enrollment Type`, data = df)
+
+# Chi-kvadrat: ali je tip kartice povezan z enrollment type?
+chisq.test(table(df$`Enrollment Type`, df$`Loyalty Card`))
+
+
+# Testi razlik med skupinama
+wilcox.test(points_accumulated ~ `Enrollment Type`, data = df)
+wilcox.test(points_redeemed ~ `Enrollment Type`, data = df)
+wilcox.test(redemption_rate ~ `Enrollment Type`, data = df)
+```
+
+Na prvi pogled nam opisna statistika pokaže, da je promocija iz leta 2018 privabila 971 novih članov, ki so v obstoju naročnine leteli v povprečju kar 45-krat, medtem ko so normalne stranke letele le 29-krat v povprečju. Zelo hitro je jasno, da je promocija pripeljala stranke, ki so bolj pogosti uporabniki letalskih družb, kot standardno pridobljeni kartičarji.
+
+
+Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko) kažejo naslednje rezultate. Stranke, ki so se vključile preko promocije, so v opazovanjem obdobju v povprečju opravile skoraj 17 letov več od standardno vpisanih strank. Ta razlika je statistično visoko značilna, saj Welchov t-test vrne rezultate t = 24.987 in p-value < 2.2e-16. Povprečni vrednosti vidni v tabeli pa sta za promocijsko skupino 45.8 in za standardno skupino 28.9.
+
+Po drugi strani pa se CLV (customer lifetime value) med skupinama praktično ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302 in p-value = 0.8432. Promocija torej ni pritegnila  strank z višjo dolgoročno vrednostjo, temveč zgolj bolj aktivne letalce.
+
+Na nadaljnih testih vidimo, da je zboranje in koriščenje točk visoko značilno med skupinama, vendar pa nam samo ta rezultat ne pove, katera skupina je bistveno boljša. Zato se obrnemo na tabelo s primerjavo, kjer opazimo, da medtem ko promocijski člani zberejo bistveno več točk zvestobe, so standardno včlanjeni člani tisti, ki jih več porabijo. Redemption rate je v povprečju pri standardnih članih 1.7%, medtem ko je pri promocijskih le 0.4%.
+
+Zato je zanimivo, da je promocija privabila stranke, ki letijo veliko, se pa ne ozirajo dosti na koriščenje ugodnosti, ki jih program nudi. Potrebna bi bila nadaljna obravnava po plačilnem razredu in izobrazbi, vendar sklep je, da stranke, ki veliko letijo nimajo finančnih zadržkov in jim tako točke zvestobe niso pomemben del programa. Morda so jim bolj važne druge ugodnosti, ki jih program zvestobe nudi, vendar teh podatkov pa žal nimamo. 
+
+Tip kartice zvestobe (Star/Nova/Aurora) pa ni statistično povezan s tipom vpisa, saj je Chi test vrnil rezultete X-squared = 0.68438 in p-value = 0.7102. Promocija torej ni bila bolj privlačna za določen segment kartic.
+
+Pomembna opomba je, da ker gre za opazovalne podatke, višja aktivnost promocijske skupine ne pomeni nujno, da je promocija vzročno povečala angažiranost. Enako verjeten scenarij je samoselekcija, in sicer da so se bolj pogosti letalci raje odločili za vključitev preko promocije. Za bolj zanesljiv vzročni zaključek bi bilo treba primerjati angažiranost istih strank pred in po vpisu.
+
+
+Primerjaj v tabeli iz poglavja 4: pri Standard skupini je povp_distance = 43.437 in povp_accumulated = 43.437 — popolnoma identično. Pri 2018 Promotion skupini pa je povp_distance = 68.827, povp_accumulated = 103.240, kar je natanko 1,5-kratnik. To ni naključje — nakazuje, da imajo promocijske stranke 1,5× množitelj točk na prevoženi km, standardne pa 1×. To je pomembna ugotovitev za tvojo nalogo "učinkovitost promocije": pomeni, da promocijska kampanja verjetno ni bila zgolj marketinška (privabi nove člane), ampak je vključevala tudi strukturno bonus stopnjo nabiranja točk kot del ponudbe. To delno pojasni, zakaj promocijski člani nabirajo tako veliko več točk — ne le zaradi več letov, temveč tudi zaradi ugodnejšega razmerja točk/km. Priporočam, da to eksplicitno preveriš in izpostaviš:
+
+```{r}
+
+df %>%
+  group_by(`Enrollment Type`) %>%
+  summarise(tocke_na_km = sum(points_accumulated, na.rm = TRUE) / sum(total_distance, na.rm = TRUE))
+```
+
+To bi lepo dopolnilo tvoj odstavek o tem, zakaj promocijski člani "zberejo bistveno več točk, a jih manj unovčijo" — zdaj imaš razlago tudi za zakaj zbirajo toliko več, ne le hipotezo o vedenju.
+
+
+Manjkajo:
+- pogled tudi po izobrazbi in prihodku.
+
+
+
+## Faktorji, ki vplivajo na engagement
+
+```{r}
+## -------------------------------------------------------------------------
+## 5. FAKTORJI, KI VPLIVAJO NA ENGAGEMENT
+## -------------------------------------------------------------------------
+
+# Korelacija numeričnih spremenljivk z engagementom
+df %>%
+  select(Salary, CLV, total_flights_sum, total_distance, redemption_rate) %>%
+  cor(use = "pairwise.complete.obs")
+
+library(reshape2)  # za melt(), ali uporabi tidyr::pivot_longer
+
+cor_matrix <- df %>%
+  select(Salary, CLV, total_flights_sum, total_distance, redemption_rate) %>%
+  cor(use = "pairwise.complete.obs")
+
+cor_long <- melt(cor_matrix)
+
+ggplot(cor_long, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4) +
+  scale_fill_gradient2(low = "steelblue", mid = "white", high = "firebrick",
+                        midpoint = 0, limits = c(-1, 1), name = "r") +
+  labs(title = "Korelacijska matrika: Salary, CLV in engagement metrike",
+       x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Na grafu korelacije vidimo, da ni absolutno nobene korelacije, ki bi pojasnila aktivnost.
+
+```{r}
+# Linearni model: kaj napoveduje število poletov?
+model <- lm(total_flights_sum ~ Salary + Education + `Marital Status` +
+              Gender + `Loyalty Card` + is_promo_2018, data = df)
+summary(model)
+```
+
+
+Korelacijska matrika pokaže, da so povezave med Salary, CLV in metrikami angažiranosti (št. poletov, razdalja, redemption rate) praktično ničelne (vse |r| < 0,03) – plača in CLV torej sama po sebi ne napovedujeta, koliko stranka leti. Pričakovano je le zelo visoka korelacija med total_flights_sum in total_distance (r = 0,97), kar je logično, saj gre za dve meri istega pojava (več poletov = več prepotovanih km), zato ju v modelu ne smemo uporabljati skupaj kot neodvisni spremenljivki.
+
+Linearni model (total_flights_sum ~ Salary + Education + Marital Status + Gender + Loyalty Card + is_promo_2018) potrjuje ta vtis: edini statistično značilen napovednik je is_promo_2018 (+17,1 poleta, p < 0,001). Vse demografske spremenljivke – plača, izobrazba, zakonski stan, spol in tip kartice – niso statistično značilne napovednice angažiranosti. Model kot celota pojasni le 5,7 % variance (R² = 0,057), kar je nizko in kaže, da glavni dejavniki angažiranosti niso zajeti v razpoložljivih demografskih spremenljivkah, temveč verjetno v vedenjskih ali časovnih dejavnikih (npr. namen potovanja, sezona, življenjski dogodki), ki jih v tem naboru podatkov nimamo.
+
+Sklep: demografija (kdo je stranka) pojasnjuje presenetljivo malo o tem, kako pogosto stranka leti – edini dejavnik z jasnim in močnim učinkom je pripadnost 2018 promocijski kohorti.
+
+## Vizualizacija
+
+```{r}
+## -------------------------------------------------------------------------
+## 6. VIZUALIZACIJE
+## -------------------------------------------------------------------------
+
+# 6a. Distribucija CLV po enrollment tipu (boxplot - primerjava skupin, robusten na osamelce)
+ggplot(df, aes(x = `Enrollment Type`, y = CLV, fill = `Enrollment Type`)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "CLV glede na tip vpisa v program zvestobe",
+       y = "Customer Lifetime Value", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# 6b. Časovna vrsta: povprečno število poletov na mesec po letih (učinek promocije v času)
+flight_clean %>%
+  group_by(Year, Month) %>%
+  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
+  mutate(date = make_date(Year, Month, 1)) %>%
+  ggplot(aes(x = date, y = povp_flights)) +
+  geom_line(color = "steelblue") +
+  geom_vline(xintercept = as.numeric(make_date(2018, 1, 1)),
+             linetype = "dashed", color = "red") +
+  labs(title = "Povprečno število poletov skozi čas",
+       subtitle = "Rdeča črta = začetek 2018 promocije",
+       x = NULL, y = "Povp. Total Flights") +
+  theme_minimal()
+
+# 6c. Redemption rate po tipu kartice in enrollment tipu
+ggplot(df, aes(x = `Loyalty Card`, y = redemption_rate, fill = `Enrollment Type`)) +
+  geom_boxplot() +
+  labs(title = "Stopnja unovčitve točk po tipu kartice in vpisa",
+       y = "Redemption rate", x = "Loyalty Card") +
+  theme_minimal()
+
+# 6d. Churn rate po enrollment tipu (bar chart - deleži)
+df %>%
+  group_by(`Enrollment Type`) %>%
+  summarise(churn_rate = mean(churned)) %>%
+  ggplot(aes(x = `Enrollment Type`, y = churn_rate, fill = `Enrollment Type`)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Delež odpovedi članstva po tipu vpisa", y = "Churn rate", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+
+
+
 
 # (Tristan) Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
 
