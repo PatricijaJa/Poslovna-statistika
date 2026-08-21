@@ -2,7 +2,9 @@
 title: "Projekt - Airline Loyalty Program Promotion and Beyond"
 author: "Manca Prošek, Tristan Dragan, Patricija Jaklič"
 date: "2026-08-14"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -64,34 +66,53 @@ pregled_CLH <- create_report(Customer_Loyalty_History)
 
 ## Customer churn-----------------------------------------
 
-## 1. članek/vir (osnove customer churn): Customer Churn Prediction: A Systematic Review of Recent Advances, Trends, and Challenges in Machine Learning and Deep Learning
+1. članek/vir (osnove customer churn): Customer Churn Prediction: A Systematic Review of Recent Advances, Trends, and Challenges in Machine Learning and Deep Learning
 *Imani, M., Joudaki, M., Beikmohammadi, A., & Arabnia, H. R. (2025)*
 Link: [1.clanek] (www.mdpi.com/2504-4990/7/3/105?utm_source=chatgpt.com)
 
-## 2. članek/vir: An asymmetrical approach to understanding con gurations of customer loyalty in the airline industry
+2. članek/vir: An asymmetrical approach to understanding con gurations of customer loyalty in the airline industry
 *Catherine Prenticea, Sandra Maria Correia Loureirob*
 Link: [2.clanek] (https://www.sciencedirect.com/science/article/pii/S0969698917301789?fr=RR-1&ref=cra_js_challenge)
 
-## 3. članek/vir: Key drivers of passenger loyalty: A case of Frankfurt–Istanbul flights. (2016).
+3. članek/vir: Key drivers of passenger loyalty: A case of Frankfurt–Istanbul flights. (2016).
 *Journal of Air Transport Management*
 Link: [3.clanek]
 (https://www.sciencedirect.com/science/article/pii/S0969699715300120?utm_source=chatgpt.com)
 
-## 4. članek/vir: Frequent flyer programs in academic studies: A literature review of research progress since 2000. (2025).
+4. članek/vir: Frequent flyer programs in academic studies: A literature review of research progress since 2000. (2025).
 *Journal of Air Transport Management.*
 Link: [4.clanek]
 (https://www.sciencedirect.com/science/article/pii/S0969699725001838?utm_source=chatgpt.com)
 
-## 5. članek/vir: In Pursuit of Enhanced Customer Retention Management: Review, Key Issues, and Future Directions
+5. članek/vir: In Pursuit of Enhanced Customer Retention Management: Review, Key Issues, and Future Directions
 *Ascarza, E., Neslin, S. A., Netzer, O., et al. (2018)*
 Link: [5.clanek]
 (https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
 
-## 6. članek/vir: Beyond Accuracy: What Data Quality Means to Data Consumers. (2015) 
+6. članek/vir: Beyond Accuracy: What Data Quality Means to Data Consumers. (2015) 
 *Richard Y. Wang & Diane M. Strong*
-Link: [5.clanek]
+Link: [6.clanek]
 (https://www.tandfonline.com/doi/abs/10.1080/07421222.1996.11518099)
 -> Kakovost podatkov
+
+7. članek/vir: Data Fusion. ACM Computing Surveys, 41(1), Article 1.
+*Bleiholder, J., & Naumann, F. (2008)*
+Link: [7.clanek]
+(https://dl.acm.org/doi/abs/10.1145/1456650.1456651)
+-> Strategija razreševanja konfliktov in utemeljitev, zakaj brez dodatnih kriterijev izbira ni upravičena.
+
+8. članek/vir:Data Cleaning of Data Streams
+*Restat, V., Rodenhausen, N., Antonin, C., & Störl, U. (2025).*
+Link: [8.clanek]
+(https://arxiv.org/abs/2507.20839)
+
+9. članek/vir: Data Cleaning: Problems and Current Approaches
+*Rahm, E., & Do, H. H. (2000).*
+Link: [9.clanek]
+(https://www.researchgate.net/publication/220282831_Data_Cleaning_Problems_and_Current_Approaches)
+
+
+
 
 # Ocena kakovosti podatkov
 
@@ -109,9 +130,9 @@ njene zahteve
         (*skladnost*, *celovitost*, *prepričljivost - verjetnost*)
         - 2. konceptualni način
         
-##1.NAČIN--------------------------------------------
+## 1.NAČIN--------------------------------------------
 
-## MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
+### MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
 a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo
 pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna skladnost,
 relacijska skladnost, računska skladnost)
@@ -146,20 +167,21 @@ smiselno naraščala, odraslega pacienta pa ostala nespremenljena)
 
 ## Ocenjevanje dimenzij kakovosti-----------------
 
-## 1. VERTIFIKACIJA (angl. Vertification)
+### 1. VERTIFIKACIJA (angl. Vertification)
 Temelji na podatkih kot takih na smiselnosti na ujemanju z omejitvami in 
 strukturo na ekspertnih mnenjih in logičnih povezavah.
 
-## 2. VALIDACIJA (angl. Validation)
+### 2. VALIDACIJA (angl. Validation)
 Temelji na preverjanju podatkov glede na nek zunanji vir, ki lahko predstavlja 
 zlati standard.
 
-##2.NAČIN-KONCEPTUALNI--------------------------------------------
+## 2.NAČIN-KONCEPTUALNI--------------------------------------------
 
 Avtor poskuša odkriti določene sistemske pomanjklivosti v podatkih.
 Ideja Weng in Casey -> predpostavka merljivih konceptov v medicini 
 
-#OCENA-KAKOVOSTI-PODATKOV-----------------------------
+
+# OCENA-KAKOVOSTI-PODATKOV-----------------------------
 
 Kakovost podatkov bomo preverili na podlagi šestih najbolj uporabljenih dimenzij
 od petnajstih, ki so navedeni v (6.članku). Odločili smo se za šest dimenzij na 
@@ -209,6 +231,84 @@ summary(Customer_Loyalty_History)
 ```
 
 Pri spremenljivki 'Salary' smo zaznali negativne vrednosti. Pri plači ('Salary') pričakujemo samo pozitivne vrednosti zato bomo v nadaljevanju po principu čiščenja in ocenjevanja kakovosti podatkov obravnavali te vrednosti
+
+
+## 2.Celovitost
+
+Podatki so celoviti, če so prisotni vsi potrebni podatki ali so določene vrednosti manjkajoče. Celovitost ne pomeni le odsotnosti praznih polj, temveč tudi, ali zbrani podatki zadostno pokrivajo vse pomembne vidike analiziranega pojava.
+
+```{r}
+map_dbl(Customer_Flight_Activity, ~mean(is.na(.))) %>% sort(decreasing = TRUE)
+map_dbl(Customer_Loyalty_History, ~mean(is.na(.))) %>% sort(decreasing = TRUE)
+```
+
+V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih 
+vrednosti, prav tako bi iz podakih podatkov rekli, da so podane vse potrebne vrednosti.
+
+V tabeli podatkov o članih programa pa opazimo, da imamo manjkajoče vrednosti 
+pri spremenljivki 'Salary' in pa seveda pri spremenljivkama 'Cancellation Year' in 
+'Cancellation Month', ki pa niso manjkajoči podatki, saj so to še aktualni člani in podatka 
+enostavno ni. Tudi pri tem naboru podatkov bi za dane stolpce rekli, da so podatki dovolj obsežni
+in nam podajajo dovolj informacij za celovitost.
+
+Vrnimo se sedaj k spremenljivki o plačah, kjer nam manjka 25% vrednosti. Trend manjkajočnosti si tu želimo bolj natančno pogledati,
+če uspemo najti kakšen vzorec.
+
+```{r}
+# Vzorec manjkajočih vrednosti
+Customer_Loyalty_History %>%
+  filter(is.na(Salary)) %>%
+  count(Gender)
+
+Customer_Loyalty_History %>%
+  filter(is.na(Salary)) %>%
+  count(`Loyalty Card`)
+
+Customer_Loyalty_History %>%
+  filter(is.na(Salary)) %>%
+  count(`Marital Status`)
+
+
+# Plače manjkajo vsem, ki imajo izobrazbo "College" !!!
+Customer_Loyalty_History %>%
+  filter(is.na(Salary)) %>%
+  count(Education)
+
+Customer_Loyalty_History %>%
+  count(Education)
+```
+
+Našli smo vzorec manjkajočnosti, in sicer podatek o plači je manjkajoč pri vseh, ki imajo nivo izobrazbe enak "College". 
+
+
+
+## 3.Doslednost
+
+Doslednost podatkov pa predstavlja njihovo ujemanje med različnimi viri, sistemi ali časovnimi odbobji. Podatki so dosledni, kadar ni protislovij in kadar so medsebojno logično skladni.
+
+```{r}
+# Ali imajo vsi poleti veljavno stranko v loyalty tabeli?
+anti_join(Customer_Flight_Activity, Customer_Loyalty_History, by = "Loyalty Number") %>% nrow()
+
+# nesmiselne vrednosti
+summary(Customer_Flight_Activity$`Total Flights`)
+summary(Customer_Flight_Activity$Distance)
+Customer_Flight_Activity %>% filter(`Total Flights` == 0 & Distance > 0)
+Customer_Flight_Activity %>% filter(`Total Flights` > 0 & Distance == 0)
+
+summary(Customer_Loyalty_History$Salary)
+Customer_Loyalty_History %>% filter(Salary < 0)
+```
+
+Pogledali smo še, če imajo vsi podatki o letih veljavno številko kartice zvestove v podatkih o kartičarjih in pa če obstajajo, kakšne nesmiselne vrednosti. Opazili smo negativne plače, ki jih bomo obravnavali pod točko 5, razen tega pa podatki delujejo dosledni.
+
+
+## 4.Pravočasnost
+
+Pravočasnost nam pove, ali so podatki na voljo dovolj hitro glede na potrebe uporabe in ali odražajo trenutno stanje. Pri analizi odtoka strank to pomeni, da podatki o vedenju strank ne smejo biti zastareli, saj se preference in vedenje hitro spreminjajo.
+
+Ker analiziramo bazo starih podatkov in imamo pomanjkljive informacije o pridobitvi podatkvo in prav tako o pridobivanju, bomo to točko spustili. Omenili smo jo, ker je izredno pomembna pri vseh analizah kakovosti podatkov in je ne smemo pozabiti. Za potrebe naše naloge bomo rekli, da so podatki pravočasni in da dobro odražajo trenutno stanje.
+
 
 ## 5.Veljavnost
 
@@ -267,111 +367,31 @@ Customer_Loyalty_History %>%
 
 ```{r}
 # Opcija
-Customer_Loyalty_History <- loyalty %>%
+Customer_Loyalty_History <- Customer_Loyalty_History %>%
   mutate(
     Salary = if_else(Salary < 0, NA_real_, Salary)
   )
 ```
 
 
-## Kakovost podatkov - neurejena Manca koda
+## 6.Enoličnost
+
+Enoličnost podatkov pomeni odsotnost podvojenih zapisov. To pomeni, da mora biti vsaka entiteta v podatkovni bazi zastopana samo enkrat. Enoličnost je pomembna za pravilno združevanje in preprečevanje dvojnega štetja pri analizah.
 
 ```{r}
-## -------------------------------------------------------------------------
-## 2. KAKOVOST PODATKOV
-## -------------------------------------------------------------------------
-
-flight <- Customer_Flight_Activity
-loyalty <- Customer_Loyalty_History
-
-# 2a. Manjkajoče vrednosti
-skim(flight)
-skim(loyalty)
-
-# Delež NA po stolpcu
-map_dbl(loyalty, ~mean(is.na(.))) %>% sort(decreasing = TRUE)
+# Dvojniki po ključu
+Customer_Loyalty_History %>% count(`Loyalty Number`) %>% filter(n > 1) # naj bo prazno - 1 vrstica na stranko
+Customer_Flight_Activity  %>% count(`Loyalty Number`, Year, Month) %>% filter(n > 1) # naj bo prazno
 ```
 
-V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih 
-vrednosti ter hitre histogramske porazdelitve posamičnih spremenljivk. 
-Medtem ko pri podatkih o članih programa opazimo, da imamo manjkajoče vrednosti 
-pri spremenljivki Salary in pa seveda pri spremenljivkama Cancellation Year in 
-Month, ki pa niso manjkajoči podatki, vendar so to še aktualni člani in podatka 
-enostavno ni. Tudi v teh podatkih lahko pogledamo histograme porazdelitev 
-številskih spremenljivk.
-
-V nadaljnem smo pogledali le še delež manjkajočih vrednosti in opazimo, da je 
-87.6% vseh članov še vedno aktivnih, kar je super odstotek in da nam pri 
-spremenljivki o plačah manjka 25% vrednosti. To so dejankse manjkajoče 
-vrednosti, ki si jih želimo še malo bolj natančno pogledati, ali obstaja 
-kakšen vzorec manjkajočnosti.
+V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar veliko dvojnih vnosov v tabeli z leti. Če pogledamo dvojne vnose bolj natančno, opazimo, da imamo dve vrsti. Imamo dvojne vnose, ki so popolni dvojniki in imamo vnose, kjer so številka kartice zvestobe, leto in mesec enaki, ostali podatki pa so si med seboj različni. To sta dva problema, ki ju bomo obravnavali ločeno. 
 
 ```{r}
-# 2b. Dvojniki po ključu
-loyalty %>% count(`Loyalty Number`) %>% filter(n > 1) # naj bo prazno - 1 vrstica na stranko
-flight  %>% count(`Loyalty Number`, Year, Month) %>% filter(n > 1) # naj bo prazno
-```
-
-Velik kazatelj kvalitetnih podatkov je tudi unikatnost vnosov, ker imamo namreč
-osebne podatke v eni datoteki, se tam dvojniki po številki zvestobe ne bi smeli
-prikazovati, prav tako bi v datoteki z leti vsak član moral imeti za vsak mesec 
-v letu le en vnos.
-
-V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar veliko 
-dvojnih vnosov v tabeli z leti, kar je lahko slab kazatelj kakovosti podatkov, 
-ki pa zahteva nadaljni vpogled.
-
-
-```{r}
-# 2c. Ali imajo vsi poleti veljavno stranko v loyalty tabeli? (referenčna integriteta)
-anti_join(flight, loyalty, by = "Loyalty Number") %>% nrow()
-
-# 2d. Osamelci / nesmiselne vrednosti
-summary(flight$`Total Flights`)
-summary(flight$Distance)
-flight %>% filter(`Total Flights` == 0 & Distance > 0) # nekonsistentnost
-flight %>% filter(`Total Flights` > 0 & Distance == 0)
-
-summary(loyalty$Salary)
-loyalty %>% filter(Salary < 0) # negativna plača = napaka?
-
-# 2e. Konsistentnost kategorij
-loyalty %>% count(`Enrollment Type`)
-loyalty %>% count(`Loyalty Card`)
-loyalty %>% count(Education)
-loyalty %>% count(`Marital Status`)
-loyalty %>% count(Gender)
-```
-
-Pogledali smo še, da imajo vsi vnosi v letih veljavno stranko, da so podatki o 
-poletih v enem mesecu in razdalji smiselni, ter da ne obstaja vnos, ki bi imel 
-nekonsistentno povezano razdaljo in število letov. Prav tako smo pogledali, da 
-so plače članov programa smiselne, kjer smo opazili nekaj negativnih plač, ki 
-jih bomo izbrisali iz vnosa in obravnavali kot manjkajoče podatke, saj ne moremo
-vedeti, ali so samo predznaki napaka ali je cel vnos napačen. 
-
-## Popravek podatkov - neurejena Manca koda
-
-Tole mi ni čist všeč še. Cilji so:
-- odstraniti vse lete nepopolnih dvojnikov, ker ne vemo, kateri je pravi
-- odstraniti popolne dvojnike, ker lahko zaupamo, da so vseeno pravilne vrednosti
-- odstrani negativne plače
-
-```{r}
-## -------------------------------------------------------------------------
-## 3. ČIŠČENJE PODATKOV
-## -------------------------------------------------------------------------
-
-## 3.0 Čiščenje podvojenih vrstic v flight_activity
-## -------------------------------------------------------------------------
-## Pravilo:
-##   a) Če imajo vrstice z enakim ključem (Loyalty Number, Year, Month) RAZLIČNE vrednosti drugje -> ne vemo, katera je prava, zato odstranimo VSE.
-##   b) Če so vrstice z enakim ključem POPOLNI dvojniki (identične povsod) -> zaupamo vrednosti in obdržimo eno kopijo.
-
+## Podvojene vrstice v Customer_Flight_Activity
 key_cols <- c("Loyalty Number", "Year", "Month")
 
 # Za vsako skupino preveri velikost skupine in št. dejansko različnih vrstic znotraj nje
-key_dup_summary <- flight %>%
+key_dup_summary <- Customer_Flight_Activity %>%
   group_by(across(all_of(key_cols))) %>%
   summarise(
     group_size        = n(),
@@ -380,61 +400,79 @@ key_dup_summary <- flight %>%
   ) %>%
   filter(group_size > 1)
 
-# Ključi, kjer je skupina POPOLN dvojnik (n_distinct_rows == 1 kljub group_size > 1)
+# Ključi, kjer je skupina POPOLN dvojnik
 full_dup_keys <- key_dup_summary %>%
   filter(n_distinct_rows == 1) %>%
   select(all_of(key_cols))
 
-# Ključi, kjer skupina NI popoln dvojnik (vrstice se med sabo razlikujejo)
+# Ključi, kjer skupina NI popoln dvojnik
 partial_dup_keys <- key_dup_summary %>%
   filter(n_distinct_rows > 1) %>%
   select(all_of(key_cols))
 
-nrow(full_dup_keys)      # št. ključev s popolnimi dvojniki (obdržimo 1 kopijo)
-nrow(partial_dup_keys)   # št. ključev z nepopolnimi/sumljivimi dvojniki (odstranimo VSE)
+nrow(full_dup_keys)
+nrow(partial_dup_keys)
 
 # Vpogled v primer nepopolnih dvojnikov
-flight %>%
+Customer_Flight_Activity %>%
   semi_join(partial_dup_keys, by = key_cols) %>%
   arrange(`Loyalty Number`, Year, Month) %>%
   head(10)
+```
 
-# Odstranitev:
-#   (a) vse vrstice, ki pripadajo nepopolnim/sumljivim dvojnikom
-#   (b) med preostalimi vrsticami odstranimo odvečne kopije popolnih dvojnikov
-flight_clean <- flight %>%
+- Obravnava popolnih dvojnikov - literatura
+
+V viru 9 (Rahm in Do, 2000, Data Cleaning: Problems and Current Approaches) avtorja navajata, da odprava dvojnikov poteka v dveh korakih. Najprej identifikacija, ki smo jo že naredili, nato pa združitev oziroma odstranitev podvojenih zapisov. Ker imamo v našem primeru opravka s popolnimi dvojniki, kjer se vse vrednosti atributov ujemajo, med njimi ni nobenih protislovij ali manjkajočih informacij, ki bi jih bilo treba uskladiti. Zato lahko brez izgube podatkovne vsebine eno od kopij enostavno odstranimo, s čimer preprečimo dvojno štetje strank v nadaljnjih analizah, hkrati pa ohranimo celovitost in konsistentnost podatkovne baze.
+
+- Obravnava nepopolnih dvojnikov - literatura
+
+V viru 7 (Bleiholder & Naumann, 2008, ACM Computing Surveys, "Data Fusion"), ki govori o usklajevanju nasprotujočih si vrednosti, obstaja uveljavljena klasifikacija strategij, ki ločuje tri pristope:
+
+- Conflict-resolving (razreševanje konflikta), kjer si izbereš eno vrednost na podlagi nekega kriterija: zanesljivosti vira, časovne novosti zapisa, večinskega glasovanja med več viri, ali domenskega znanja.
+- Conflict-avoiding (izogibanje), kjer uporabiš pravilo (npr. vedno vzemi maksimum, minimum, povprečje).
+- Conflict-ignoring (nerazreševanje), kjer se konflikta sploh ne poskuša razrešiti, temveč se pusti nerazrešen ali označi kot neznan.
+
+Prvi dve zgornji strategiji razreševanja potrebujeta vsaj neko dodatno informacijo, na podlagi katere bi se odločili, katera vrednost je pravilnejša. To bi bil lahko podatek o viru, časovni žig vnosa podatkov, nek drug dodatek vir in podobno. Ker pa mi poleg podatkov nimamo drugega in so si nekatere naše vrednosti nasprotujoče (število letov in prepotovana razdalja v teh primerih nista pozitivno povezana), bi bila izbira ene od privih dveh rešitev zgolj ugibanje. To tudi Rahm & Do (2000) in Restat et al. (2025) izpostavita kot problem, da brez dodatnih pravil ali človeške presoje se kontradiktornega zapisa ne da zanesljivo razrešiti.
+
+Zato je tudi v literaturi v takšnih primerih priznana pot nerazreševanja, saj namesto, da se izmislimo, katera vrednost je prava, oba zapisa označimo kot manjkajoč podatek. S tem ne vnašamo umetne pristranskosti v podatke, ohranjamo transparentnos in če bi bilo takih podatkov veliko, jih lahko obravnavamo kot manjkajoče vrednosti. Je pa pomembno dodatki, da je delež nepopolnih dvojnikov majhen in ne vpliva na rezultate naših nadaljnih analiz. 
+
+Kljub temu podatke sčistimo kot smo se s pomočjo literature odločili.
+
+```{r}
+# Nepopolni dvojniki = odstranimo vse
+# Popolni dvojniki = odstranimo odvečne kopije
+
+Customer_Flight_Activity_Clean <- Customer_Flight_Activity %>%
   anti_join(partial_dup_keys, by = key_cols) %>%
   distinct()
 
 # Poročilo o čiščenju
-n_total            <- nrow(flight)
-n_removed_partial  <- flight %>% semi_join(partial_dup_keys, by = key_cols) %>% nrow()
-n_removed_full_dup <- n_total - n_removed_partial - nrow(flight_clean)
+n_total            <- nrow(Customer_Flight_Activity)
+n_removed_partial  <- Customer_Flight_Activity %>% semi_join(partial_dup_keys, by = key_cols) %>% nrow()
+n_removed_full_dup <- n_total - n_removed_partial - nrow(Customer_Flight_Activity_Clean)
 
 cat("Vrstic prej:", n_total, "\n")
 cat("Odstranjenih (nepopolni dvojniki - vse vrstice skupine):", n_removed_partial, "\n")
 cat("Odstranjenih (odvečne kopije popolnih dvojnikov):", n_removed_full_dup, "\n")
-cat("Vrstic po čiščenju:", nrow(flight_clean), "\n")
+cat("Vrstic po čiščenju:", nrow(Customer_Flight_Activity_Clean), "\n")
 
-# Kontrola - noben ključ naj se več ne podvaja
-flight_clean %>% count(across(all_of(key_cols))) %>% filter(n > 1)
+# Kontrola = noben ključ naj se več ne podvaja
+Customer_Flight_Activity_Clean %>% count(across(all_of(key_cols))) %>% filter(n > 1)
 ```
 
 
+
+
+
+
+
+## Agregacija - Manca (če bi se slučajno rabili)
+
 ```{r}
-## 3.1 Odstranitev negativnih plač v loyalty_history
+## 3.2 Agregacija po stranki (na podlagi Customer_Flight_Activity_Clean)
 ## -------------------------------------------------------------------------
 
-n_negative_salary <- loyalty %>% filter(Salary < 0) %>% nrow()
-n_negative_salary   # 20
-
-loyalty_clean <- loyalty %>%
-  mutate(Salary = if_else(Salary < 0, NA_real_, Salary))
-
-## 3.2 Agregacija po stranki (na podlagi flight_clean)
-## -------------------------------------------------------------------------
-
-customer_activity <- flight_clean %>%
+Customer_Activity <- Customer_Flight_Activity_Clean %>%
   group_by(`Loyalty Number`) %>%
   summarise(
     total_flights_sum    = sum(`Total Flights`, na.rm = TRUE),
@@ -451,8 +489,8 @@ customer_activity <- flight_clean %>%
     avg_flights_per_month = total_flights_sum / active_months
   )
 
-df <- loyalty_clean %>%
-  left_join(customer_activity, by = "Loyalty Number") %>%
+df <- Customer_Loyalty_History %>%
+  left_join(Customer_Activity, by = "Loyalty Number") %>%
   mutate(
     is_promo_2018 = `Enrollment Type` == "2018 Promotion",
     churned = !is.na(`Cancellation Year`)
@@ -462,11 +500,12 @@ glimpse(df)
 ```
 
 
-Sedaj nimamo nobenih podvojenih vrednosti in negativnih plač, prav tako pa smo v customer activity združili osebne podatke o strankah in povzetek njihovih letalskih aktivnosti.
+
 
 
 
 # Vizualizacija
+
 
 # (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
 
@@ -616,7 +655,7 @@ ggplot(df, aes(x = `Enrollment Type`, y = CLV, fill = `Enrollment Type`)) +
   theme(legend.position = "none")
 
 # 6b. Časovna vrsta: povprečno število poletov na mesec po letih (učinek promocije v času)
-flight_clean %>%
+Customer_Flight_Activity %>%
   group_by(Year, Month) %>%
   summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
   mutate(date = make_date(Year, Month, 1)) %>%
