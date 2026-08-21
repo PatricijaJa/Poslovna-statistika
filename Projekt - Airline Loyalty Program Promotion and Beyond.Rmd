@@ -174,7 +174,7 @@ analizi so:
 5.Veljavnost\
 6.Enoličnost
 
-## Natančnost podatkov
+## 1.Natančnost podatkov
 
 "Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz 
 resničnega sveta.
@@ -208,9 +208,11 @@ summary(Customer_Flight_Activity)
 summary(Customer_Loyalty_History)
 ```
 
-Pri spremenljivki 'Salary' je videti negativno vrednost, kar ni mogoče, zaradi 
-obstoja minimalne plače in ker bi negativna vrednost pomenila, da moremo mi 
-plačevati delodajalcu mesečno plačo.
+Pri spremenljivki 'Salary' smo zaznali negativne vrednosti. Pri plači ('Salary') pričakujemo samo pozitivne vrednosti zato bomo v nadaljevanju po principu čiščenja in ocenjevanja kakovosti podatkov obravnavali te vrednosti
+
+## 5.Veljavnost
+
+Kot je bilo že ugotovljeno zgoraj smo opazili negativne vrednosti pri spremenljivki 'Salary', kar ni pričakovano. Te vrednosti smo zaznali kot neveljavne. V nadaljevanju bomo preverili ali obstaja kakšen vzorec negativnih vrednosti in se na podlagi podrobnejšega pregleda podatkov odločili kaj bomo z njimi naredili.
 
 ```{r}
 ggplot(Customer_Loyalty_History, aes(x = Salary)) +
@@ -220,6 +222,50 @@ ggplot(Customer_Loyalty_History, aes(x = Salary)) +
     title = "Porazdelitev spremenljivke Salary",
     x = "Salary",
     y = NULL
+  )
+```
+
+```{r}
+Customer_Loyalty_History %>%
+  filter(Salary < 0) %>%
+  summarise(
+    n = n(),
+    min_salary = min(Salary),
+    max_salary = max(Salary)
+  )
+```
+
+```{r}
+# delež
+mean(Customer_Loyalty_History$Salary < 0, na.rm = TRUE)
+```
+
+```{r}
+# Vzorec negativnih vrednosti
+Customer_Loyalty_History %>%
+  filter(Salary < 0) %>%
+  count(Gender)
+
+Customer_Loyalty_History %>%
+  filter(Salary < 0) %>%
+  count(Education)
+
+Customer_Loyalty_History %>%
+  filter(Salary < 0) %>%
+  count(`Loyalty Card`)
+```
+
+```{r}
+Customer_Loyalty_History %>%
+  filter(Salary < 0) %>%
+  summary()
+```
+
+```{r}
+# Opcija
+Customer_Loyalty_History <- loyalty %>%
+  mutate(
+    Salary = if_else(Salary < 0, NA_real_, Salary)
   )
 ```
 
