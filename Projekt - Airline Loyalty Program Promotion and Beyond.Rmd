@@ -212,7 +212,11 @@ Pri spremenljivki 'Salary' smo zaznali negativne vrednosti. Pri plači ('Salary'
 
 ## 5.Veljavnost
 
-Kot je bilo že ugotovljeno zgoraj smo opazili negativne vrednosti pri spremenljivki 'Salary', kar ni pričakovano. Te vrednosti smo zaznali kot neveljavne. V nadaljevanju bomo preverili ali obstaja kakšen vzorec negativnih vrednosti in se na podlagi podrobnejšega pregleda podatkov odločili kaj bomo z njimi naredili.
+Kot je bilo že ugotovljeno zgoraj smo opazili negativne vrednosti pri 
+spremenljivki 'Salary', kar ni pričakovano. Te vrednosti smo zaznali kot 
+neveljavne. V nadaljevanju bomo preverili ali obstaja kakšen vzorec negativnih 
+vrednosti in se na podlagi podrobnejšega pregleda podatkov odločili kaj bomo z 
+njimi naredili.
 
 ```{r}
 ggplot(Customer_Loyalty_History, aes(x = Salary)) +
