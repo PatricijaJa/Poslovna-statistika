@@ -2,7 +2,7 @@
 title: "Projekt - Airline Loyalty Program Promotion and Beyond"
 author: "Manca Prošek, Tristan Dragan, Patricija Jaklič"
 date: "2026-08-14"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -52,7 +52,8 @@ Osnovne lastnosti podatkov (Customer Loyalty History):
 Št. popolnih vrstic: 1,540
 Št. numeričnih spremenljivk: 7
 Št. opisnih spremenljivk: 9
-Spremenljivke z manjkajočimi vrednostmi so: Salary (25.32%), Cancellation Month (87.65%) in Cancellation Year (87.65%).
+Spremenljivke z manjkajočimi vrednostmi so: Salary (25.32%), 
+Cancellation Month (87.65%) in Cancellation Year (87.65%).
 
 ```{r}
 pregled_CLH <- create_report(Customer_Loyalty_History)
@@ -95,44 +96,63 @@ Link: [5.clanek]
 # Ocena kakovosti podatkov
 
 # Magisterska naloga-Janez-Bijec--------------------------------
-Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki kakovosti in učinkoviotsti oskrbe pacientov s koronarno boleznijo
+Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki kakovosti in
+učinkoviotsti oskrbe pacientov s koronarno boleznijo
 
 Izpiski:
 - Kdaj so podatki kakovostni? Kadar so "fit for purpose"
-- ocenjevanje kakovosti podatkov prilagodit vsaki analizi posebaj glede na njene zahteve
+- ocenjevanje kakovosti podatkov prilagodit vsaki analizi posebaj glede na 
+njene zahteve
 - Avtor v svoji analizi uporabi dva načina:
-        - 1. Na podlagi modela ocenjevanja in terminologije dimenzij            kakovosti (prilagojen za elektronske zdravstvene podatke) 
+        - 1. Na podlagi modela ocenjevanja in terminologije dimenzij kakovosti 
+        (prilagojen za elektronske zdravstvene podatke) 
         (*skladnost*, *celovitost*, *prepričljivost - verjetnost*)
         - 2. konceptualni način
         
 ##1.NAČIN--------------------------------------------
 
 ## MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
-a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna skladnost, relacijska skladnost, računska skladnost)
-  - VREDNOSTNA skladnost: spol ima samo dve vrednosti, starost nima negativnih vrednosti,...
+a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo
+pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna skladnost,
+relacijska skladnost, računska skladnost)
+  - VREDNOSTNA skladnost: spol ima samo dve vrednosti, starost nima negativnih
+  vrednosti,...
   - RELACIJSKA skladnost: omogočanje relacije med tabelami v bazi podatkov
   - RAČUNSKA pravilnost izpeljanih spremenljivk
   
-b. CELOVITOST - dimenzija kakovosti, ki ocenjuje prisotnost oz. odsotnost (tudi frekvenco podatkov) ne da bi se ozirala na vrednosti, ki jih podatki zavzemajo.
+b. CELOVITOST - dimenzija kakovosti, ki ocenjuje prisotnost oz. odsotnost 
+(tudi frekvenco podatkov) ne da bi se ozirala na vrednosti, ki jih podatki 
+zavzemajo.
 Ta dimenzija kakovosti nima poddimenzij.
 
-c. PREPRIČLJIVOST - VERJETNOST: dimenzija kakovosti, ki osredotoča na same vrednosti, ki jih zavzemajo (imajo podatki) in poskuša odgovoriti na vprašanje, kako vrednosti podatkov opisujejo realno stanje, koliko jim je mogoče zaupati.
+c. PREPRIČLJIVOST - VERJETNOST: dimenzija kakovosti, ki osredotoča na same 
+vrednosti, ki jih zavzemajo (imajo podatki) in poskuša odgovoriti na vprašanje, 
+kako vrednosti podatkov opisujejo realno stanje, koliko jim je mogoče zaupati.
 
 Poddimenzije:
   - UNIKATNA PREPRIČLJIVOST (angl. Uniquness plausibility)
-podvajanje podatkov, tam kjer niso smiselni (npr. en identifikator pacienta je povezan z dvema spoloma ali dvema različnima glavnima diagnozama za isto hospitalizacijo)
+podvajanje podatkov, tam kjer niso smiselni (npr. en identifikator pacienta je 
+povezan z dvema spoloma ali dvema različnima glavnima diagnozama za isto
+hospitalizacijo)
   - NEČASOVNA PREPRIČLJIVOST (angl. Atemporal plausibility)
-Povezana z oceno koliko se vrednosti in porazdelitve vrednosti skladajo glede na neko splošno vedenje ali glede na nek zunanju standard. (npr. telesne višine pacientov se porazdeljuje normalno s povprečjem 170 cim in standardnim odklonom 15cm)
+Povezana z oceno koliko se vrednosti in porazdelitve vrednosti skladajo glede na
+neko splošno vedenje ali glede na nek zunanju standard. (npr. telesne višine
+pacientov se porazdeljuje normalno s povprečjem 170 cim in standardnim odklonom
+15cm)
   - ČASOVNA PREPLIČLJIVOST (angl. Temporal plausibility)
-Smiselnost in pravilnost spreminjanja ali ohranjanja vrednosti spremenljivk glede 
-na čas (npr. ali je telesna višina pri večini pacientov v adolescenci smiselno naraščala, odraslega pacienta pa ostala nespremenljena)
+Smiselnost in pravilnost spreminjanja ali ohranjanja vrednosti spremenljivk 
+glede na čas (npr. ali je telesna višina pri večini pacientov v adolescenci 
+smiselno naraščala, odraslega pacienta pa ostala nespremenljena)
 
 ## Ocenjevanje dimenzij kakovosti-----------------
 
 ## 1. VERTIFIKACIJA (angl. Vertification)
-Temelji na podatkih kot takih na smiselnosti na ujemanju z omejitvami in strukturo na ekspertnih mnenjih in logičnih povezavah.
+Temelji na podatkih kot takih na smiselnosti na ujemanju z omejitvami in 
+strukturo na ekspertnih mnenjih in logičnih povezavah.
+
 ## 2. VALIDACIJA (angl. Validation)
-Temelji na preverjanju podatkov glede na nek zunanji vir, ki lahko predstavlja zlati standard.
+Temelji na preverjanju podatkov glede na nek zunanji vir, ki lahko predstavlja 
+zlati standard.
 
 ##2.NAČIN-KONCEPTUALNI--------------------------------------------
 
@@ -141,9 +161,12 @@ Ideja Weng in Casey -> predpostavka merljivih konceptov v medicini
 
 #OCENA-KAKOVOSTI-PODATKOV-----------------------------
 
-Kakovost podatkov bomo preverili na podlagi šestih najbolj uporabljenih dimenzij od petnajstih, ki so navedeni v (6.članku). Odločili smo se za šest dimenzij na podlagi literature in praks.
+Kakovost podatkov bomo preverili na podlagi šestih najbolj uporabljenih dimenzij
+od petnajstih, ki so navedeni v (6.članku). Odločili smo se za šest dimenzij na 
+podlagi literature in praks.
 
-Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali pri naši analizi so:
+Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali pri naši
+analizi so:
 1.Natančnost ali točnost\
 2.Celovitost\
 3.Doslednost\
@@ -153,12 +176,30 @@ Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali pri na�
 
 ## Natančnost podatkov
 
-"Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz resničnega sveta.
-Natančnost podatkov se osredotoča na pravilnost in zanesljivost podatkov ter zagotavlja, da ti ne vsebujejo napak, ki bi nastale zaradi nepravilnega vnosa ali pomanjkljive obdelave.
-Primarni cilj zagotavljanja točnosti podatkov je prepoznavanje in odpravljanje napak v podatkovnih vrednostih, kot so napake pri prepisovanju, podvojeni vnosi in napačne vrednosti.
-Točnost podatkov se dosega z uporabo: – čiščenja podatkov za prepoznavanje in odpravljanje napak ter neskladnosti v naborih podatkov, kot so odstranjevanje podvojenih zapisov, popravljanje tipkarskih napak in standardizacija podatkov; – preverjanja veljavnosti podatkov s pomočjo vnaprej določenih pravil ali algoritmov za odkrivanje napak, neskladnosti in netočnosti v podatkih med postopkom vnosa ali naknadno; – profiliranja podatkov za prepoznavanje vzorcev, trendov in nepravilnosti v naborih podatkov, ki lahko kažejo na netočnosti ali neskladnosti."
+"Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz 
+resničnega sveta.
+Natančnost podatkov se osredotoča na pravilnost in zanesljivost podatkov ter 
+zagotavlja, da ti ne vsebujejo napak, ki bi nastale zaradi nepravilnega vnosa 
+ali pomanjkljive obdelave.
+Primarni cilj zagotavljanja točnosti podatkov je prepoznavanje in odpravljanje 
+napak v podatkovnih vrednostih, kot so napake pri prepisovanju, podvojeni vnosi 
+in napačne vrednosti.
+Točnost podatkov se dosega z uporabo: 
+– čiščenja podatkov za prepoznavanje in 
+odpravljanje napak ter neskladnosti v naborih podatkov, kot so odstranjevanje 
+podvojenih zapisov, popravljanje tipkarskih napak in standardizacija podatkov; 
+– preverjanja veljavnosti podatkov s pomočjo vnaprej določenih pravil ali 
+algoritmov za odkrivanje napak, neskladnosti in netočnosti v podatkih med 
+postopkom vnosa ali naknadno; 
+– profiliranja podatkov za prepoznavanje vzorcev, trendov in nepravilnosti v 
+naborih podatkov, ki lahko kažejo na netočnosti ali neskladnosti."
 
-Za naše podatke nimamo zunanjih referenčnih virov s katerim bi lahko naredili neposredno primerjavo podatkov za preverjanje točnosti podatkov, ker nimamo neodvisnega vira točnosti podatkov ne moremo empirično dokazati. Zato bomo v nadaljevanju preverjali logična pravila in potencialne napačne oz ekstremne vrednosti. 
+Za naše podatke nimamo zunanjih referenčnih virov s katerim bi lahko naredili 
+neposredno primerjavo podatkov za preverjanje točnosti podatkov, ker nimamo 
+neodvisnega vira točnosti podatkov ne moremo empirično dokazati. Zato bomo v 
+nadaljevanju preverjali logična pravila in potencialne napačne oz ekstremne 
+vrednosti. 
+
 ```{r kvalitetaPodatkov_Natančnost}
 summary(Customer_Flight_Activity)
 ```
@@ -167,7 +208,9 @@ summary(Customer_Flight_Activity)
 summary(Customer_Loyalty_History)
 ```
 
-Pri spremenljivki 'Salary' je videti negativno vrednost, kar ni mogoče, zaradi obstoja minimalne plače in ker bi negativna vrednost pomenila, da moremo mi plačevati delodajalcu mesečno plačo.
+Pri spremenljivki 'Salary' je videti negativno vrednost, kar ni mogoče, zaradi 
+obstoja minimalne plače in ker bi negativna vrednost pomenila, da moremo mi 
+plačevati delodajalcu mesečno plačo.
 
 ```{r}
 ggplot(Customer_Loyalty_History, aes(x = Salary)) +
@@ -199,9 +242,19 @@ skim(loyalty)
 map_dbl(loyalty, ~mean(is.na(.))) %>% sort(decreasing = TRUE)
 ```
 
-V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih vrednosti ter hitre histogramske porazdelitve posamičnih spremenljivk. Medtem ko pri podatkih o članih programa opazimo, da imamo manjkajoče vrednosti pri spremenljivki Salary in pa seveda pri spremenljivkama Cancellation Year in Month, ki pa niso manjkajoči podatki, vendar so to še aktualni člani in podatka enostavno ni. Tudi v teh podatkih lahko pogledamo histograme porazdelitev številskih spremenljivk.
+V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih 
+vrednosti ter hitre histogramske porazdelitve posamičnih spremenljivk. 
+Medtem ko pri podatkih o članih programa opazimo, da imamo manjkajoče vrednosti 
+pri spremenljivki Salary in pa seveda pri spremenljivkama Cancellation Year in 
+Month, ki pa niso manjkajoči podatki, vendar so to še aktualni člani in podatka 
+enostavno ni. Tudi v teh podatkih lahko pogledamo histograme porazdelitev 
+številskih spremenljivk.
 
-V nadaljnem smo pogledali le še delež manjkajočih vrednosti in opazimo, da je 87.6% vseh članov še vedno aktivnih, kar je super odstotek in da nam pri spremenljivki o plačah manjka 25% vrednosti. To so dejankse manjkajoče vrednosti, ki si jih želimo še malo bolj natančno pogledati, ali obstaja kakšen vzorec manjkajočnosti.
+V nadaljnem smo pogledali le še delež manjkajočih vrednosti in opazimo, da je 
+87.6% vseh članov še vedno aktivnih, kar je super odstotek in da nam pri 
+spremenljivki o plačah manjka 25% vrednosti. To so dejankse manjkajoče 
+vrednosti, ki si jih želimo še malo bolj natančno pogledati, ali obstaja 
+kakšen vzorec manjkajočnosti.
 
 ```{r}
 # 2b. Dvojniki po ključu
@@ -209,9 +262,14 @@ loyalty %>% count(`Loyalty Number`) %>% filter(n > 1) # naj bo prazno - 1 vrstic
 flight  %>% count(`Loyalty Number`, Year, Month) %>% filter(n > 1) # naj bo prazno
 ```
 
-Velik kazatelj kvalitetnih podatkov je tudi unikatnost vnosov, ker imamo namreč osebne podatke v eni datoteki, se tam dvojniki po številki zvestobe ne bi smeli prikazovati, prav tako bi v datoteki z leti vsak član moral imeti za vsak mesec v letu le en vnos.
+Velik kazatelj kvalitetnih podatkov je tudi unikatnost vnosov, ker imamo namreč
+osebne podatke v eni datoteki, se tam dvojniki po številki zvestobe ne bi smeli
+prikazovati, prav tako bi v datoteki z leti vsak član moral imeti za vsak mesec 
+v letu le en vnos.
 
-V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar veliko dvojnih vnosov v tabeli z leti, kar je lahko slab kazatelj kakovosti podatkov, ki pa zahteva nadaljni vpogled.
+V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar veliko 
+dvojnih vnosov v tabeli z leti, kar je lahko slab kazatelj kakovosti podatkov, 
+ki pa zahteva nadaljni vpogled.
 
 
 ```{r}
@@ -235,7 +293,12 @@ loyalty %>% count(`Marital Status`)
 loyalty %>% count(Gender)
 ```
 
-Pogledali smo še, da imajo vsi vnosi v letih veljavno stranko, da so podatki o poletih v enem mesecu in razdalji smiselni, ter da ne obstaja vnos, ki bi imel nekonsistentno povezano razdaljo in število letov. Prav tako smo pogledali, da so plače članov programa smiselne, kjer smo opazili nekaj negativnih plač, ki jih bomo izbrisali iz vnosa in obravnavali kot manjkajoče podatke, saj ne moremo vedeti, ali so samo predznaki napaka ali je cel vnos napačen. 
+Pogledali smo še, da imajo vsi vnosi v letih veljavno stranko, da so podatki o 
+poletih v enem mesecu in razdalji smiselni, ter da ne obstaja vnos, ki bi imel 
+nekonsistentno povezano razdaljo in število letov. Prav tako smo pogledali, da 
+so plače članov programa smiselne, kjer smo opazili nekaj negativnih plač, ki 
+jih bomo izbrisali iz vnosa in obravnavali kot manjkajoče podatke, saj ne moremo
+vedeti, ali so samo predznaki napaka ali je cel vnos napačen. 
 
 ## Popravek podatkov - neurejena Manca koda
 
@@ -395,12 +458,24 @@ wilcox.test(points_redeemed ~ `Enrollment Type`, data = df)
 wilcox.test(redemption_rate ~ `Enrollment Type`, data = df)
 ```
 
-Na prvi pogled nam opisna statistika pokaže, da je promocija iz leta 2018 privabila 971 novih članov, ki so v obstoju naročnine leteli v povprečju kar 45-krat, medtem ko so normalne stranke letele le 29-krat v povprečju. Zelo hitro je jasno, da je promocija pripeljala stranke, ki so bolj pogosti uporabniki letalskih družb, kot standardno pridobljeni kartičarji.
+Na prvi pogled nam opisna statistika pokaže, da je promocija iz leta 2018 
+privabila 971 novih članov, ki so v obstoju naročnine leteli v povprečju kar 
+45-krat, medtem ko so normalne stranke letele le 29-krat v povprečju. Zelo hitro
+je jasno, da je promocija pripeljala stranke, ki so bolj pogosti uporabniki 
+letalskih družb, kot standardno pridobljeni kartičarji.
 
 
-Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko) kažejo naslednje rezultate. Stranke, ki so se vključile preko promocije, so v opazovanjem obdobju v povprečju opravile skoraj 17 letov več od standardno vpisanih strank. Ta razlika je statistično visoko značilna, saj Welchov t-test vrne rezultate t = 24.987 in p-value < 2.2e-16. Povprečni vrednosti vidni v tabeli pa sta za promocijsko skupino 45.8 in za standardno skupino 28.9.
+Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko) kažejo 
+naslednje rezultate. Stranke, ki so se vključile preko promocije, so v 
+opazovanjem obdobju v povprečju opravile skoraj 17 letov več od standardno 
+vpisanih strank. Ta razlika je statistično visoko značilna, saj Welchov t-test 
+vrne rezultate t = 24.987 in p-value < 2.2e-16. Povprečni vrednosti vidni v 
+tabeli pa sta za promocijsko skupino 45.8 in za standardno skupino 28.9.
 
-Po drugi strani pa se CLV (customer lifetime value) med skupinama praktično ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302 in p-value = 0.8432. Promocija torej ni pritegnila  strank z višjo dolgoročno vrednostjo, temveč zgolj bolj aktivne letalce.
+Po drugi strani pa se CLV (customer lifetime value) med skupinama praktično 
+ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302 in 
+p-value = 0.8432. Promocija torej ni pritegnila  strank z višjo dolgoročno 
+vrednostjo, temveč zgolj bolj aktivne letalce.
 
 Na nadaljnih testih vidimo, da je zboranje in koriščenje točk visoko značilno med skupinama, vendar pa nam samo ta rezultat ne pove, katera skupina je bistveno boljša. Zato se obrnemo na tabelo s primerjavo, kjer opazimo, da medtem ko promocijski člani zberejo bistveno več točk zvestobe, so standardno včlanjeni člani tisti, ki jih več porabijo. Redemption rate je v povprečju pri standardnih članih 1.7%, medtem ko je pri promocijskih le 0.4%.
 
