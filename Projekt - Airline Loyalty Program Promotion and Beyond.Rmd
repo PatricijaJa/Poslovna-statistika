@@ -22,44 +22,118 @@ library(tinytex)
 library(tidyverse)
 library(lubridate)
 library(skimr)
+library(kableExtra)
+library(forcats)
 ```
 
-# Branje podatkov
+# Eksploratorna podatkovna analiza 
 
 ## 1. Customer Flight Activity.csv
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
 ```
 
-Osnovne lastnosti podatkov (Customer Flight Activity):
-Št. vrstic: 392,936
-Št. stolpcev: 8
-Ni manjkajočih podatkov/vrstic
-Vse spremenljivke so numerične
-Vse spremenljivke razen Loyalty Number in Month so asimetrične v desno.
+```{r}
+kable(summary(Customer_Flight_Activity))
+```
 
 ```{r}
-pregled_CFA <- create_report(Customer_Flight_Activity)
+anyNA.data.frame(Customer_Flight_Activity)
 ```
+
+Podatkovni okvir vsebuje mesečno aktivnost članov programa zvestobe (Customer Flight Activity). Vsebuje 392,936 vrstic in 8 stolpcev, pri čemer vsaka vrstica predstavlja en let. Vse spremenljivke so numerične. Vidimo lahko, da so vrednosti v večini smiselne (na primer nimamo negativnega števila vseh letov, ipd.). Podatki so bili zbrani med letoma 2017 in 2018, člani programa zvestobe pa so opravili med 0 in 28 letov. Že iz povzetka lahko razberemo, da so podatki asimetrično porazdeljeni. Razen spremenljivk `Loyalty Number` in `Year`, katerih porazdelitev ni smiselna za analizo ter `Month`, ki je skoraj uniformno porazdeljen. Ni manjkajočih vrednosti.
+
+```{r}
+Customer_Flight_Activity %>%
+  select(-`Loyalty Number`) %>%
+  plot_histogram(ncol=3L)
+```
+Vizualizacija potrdi naše sume glede močne (desne) asimetričnosti podatkov. Ta nam lahko v nadaljnjih analizah, kjer predpostavljamo normalnost, povzroča velike težave. Poskusimo jo odpraviti z logaritmiranjem. 
+
+```{r}
+# brez teh
+exclude_cols <- c("Loyalty Number", "Month", "Year")
+
+# numerični
+cols_to_log <- Customer_Flight_Activity %>%
+  select(where(is.numeric), -any_of(exclude_cols)) %>%
+  names()
+
+Customer_Flight_Activity_Log <- Customer_Flight_Activity %>%
+  mutate(across(all_of(cols_to_log), ~ log(.x)))
+```
+
+```{r}
+Customer_Flight_Activity_Log %>%
+  select(-`Loyalty Number`, -`Month`) %>%
+  plot_histogram(ncol=3L)
+```
+Pri večini spremenljivk se z logaritmiranjem precej popravimo asimetričnost, v primeru `Points Redeemed` (vnovčene točke) se celo približamo normalni porazdelitvi, pri `Total Flights` (vsi leti) pa vsaj nekoliko zmanjšamo asimetričnost.  
+
 
 ## 2. Customer Loyalty History.csv
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
 ```
 
-Osnovne lastnosti podatkov (Customer Loyalty History):
-Št. vrstic: 16,737
-Št. stolpcev: 16
-Št. manjkajočih podatkov: 33,578
-Št. popolnih vrstic: 1,540
-Št. numeričnih spremenljivk: 7
-Št. opisnih spremenljivk: 9
-Spremenljivke z manjkajočimi vrednostmi so: Salary (25.32%), 
-Cancellation Month (87.65%) in Cancellation Year (87.65%).
+```{r}
+# povzetek s knjižnjico skim
+skimmed <- skim(Customer_Loyalty_History)
+
+skimmed %>%
+  select(skim_type, skim_variable, n_missing, complete_rate,
+         numeric.mean, numeric.sd,       
+         character.n_unique, character.empty, character.min, character.max) %>% 
+  kable()
+```
+
+Podatkovni okvir vsebuje podatke o članih programa zvestobe (Customer Loyalty History). Vsebuje 16,737 vrstic in 16 stolpcev, pri čemer vsaka vrstica predstavlja posamezenga člana iz Kanade. Numeričnih spremenljivk je 7, opisnih pa 9. Tako imamo podatke od izobrazbe in zakonskega stana pa vse do plače. Prav `Salary` (plača) in `CLV` (skupna vrednost kupca) delujete asmitrično, dobro bi bilo da preverimo to še vizualno.
+Spremenljivke z manjkajočimi vrednostmi so: `Salary` (25.32%),  `Cancellation Month` (87.65%) in `Cancellation Year` (87.65%). Pri prvi gre za prave manjkajoče vrednosti, pri zadnjih dveh pa vrednost NA pomeni, da član ni zapustil programa zvestobe, kot je to navedeno v pripadajočem gradivu *Airline Loyalty Program Promotion and Beyond_PS 2026*. 
 
 ```{r}
-pregled_CLH <- create_report(Customer_Loyalty_History)
+# numericne
+Customer_Loyalty_History %>%
+  select(-`Loyalty Number`) %>%
+  plot_histogram()
+
+# opisne
+Customer_Loyalty_History %>%
+  select(-`Country`) %>%
+  mutate(
+    across(
+      where(is.character),   
+      # top 10
+      ~ fct_lump_n(.x, n = 10, other_level = "Other")
+    )
+  ) %>%
+  plot_bar()
 ```
+Spremenljvka `City` ima 29 kategorij, `Postal Code` pa kar 55, zaradi lažje preglednosti na grafih je dodana še kategorija $"Other"$. `Salary` in `CLV` sta močno (desno) asmietrična zato ju tako kot prejšnje spremenljivke logaritmiramo. Prav tako smo pri spremenljivki `Salary` smo zaznali negativne vrednosti. Pri plači pričakujemo samo pozitivne vrednosti zato bomo v nadaljevanju po principu čiščenja in ocenjevanja kakovosti podatkov obravnavali te vrednosti kot manjkajoče. 
+
+```{r}
+# negativne vrednosti v Salary z NA
+Customer_Loyalty_History <- Customer_Loyalty_History %>%
+  mutate(Salary = if_else(Salary < 0, NA_real_, Salary))
+
+# izključi
+exclude_cols <- c("Loyalty Number", "Postal Code", "Loyalty Card", "Enrollment Year",
+                  "Enrollment Month", "Cancellation Year", "Cancellation Month")
+
+cols_to_log <- Customer_Loyalty_History %>%
+  select(where(is.numeric), -any_of(exclude_cols)) %>%
+  names()
+
+# log
+Customer_Loyalty_History_Log <- Customer_Loyalty_History %>%
+  mutate(across(all_of(cols_to_log), ~ log(.x)))
+```
+
+```{r}
+Customer_Loyalty_History_Log %>%
+  select(`CLV`, `Salary`) %>%
+  plot_histogram(ncol=4L)
+```
+Z logaritmiranjem `Salary` in `CLV` smo delno odpravili močno asimeričnost, ki je bila prisotna prej.
 
 
 # Viri
@@ -229,8 +303,6 @@ summary(Customer_Flight_Activity)
 ```{r}
 summary(Customer_Loyalty_History)
 ```
-
-Pri spremenljivki 'Salary' smo zaznali negativne vrednosti. Pri plači ('Salary') pričakujemo samo pozitivne vrednosti zato bomo v nadaljevanju po principu čiščenja in ocenjevanja kakovosti podatkov obravnavali te vrednosti
 
 
 ## 2.Celovitost
