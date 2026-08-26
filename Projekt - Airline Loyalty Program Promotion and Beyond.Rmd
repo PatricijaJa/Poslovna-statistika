@@ -32,6 +32,7 @@ library(forcats)
 library(missForest)
 library(missRanger)
 library(factoextra)
+library(dplyr)
 ```
 
 # Eksploratorna podatkovna analiza 
@@ -96,7 +97,7 @@ skimmed %>%
   kable()
 ```
 
-Podatkovni okvir vsebuje podatke o članih programa zvestobe (Customer Loyalty History). Vsebuje 16,737 vrstic in 16 stolpcev, pri čemer vsaka vrstica predstavlja posamezenga člana iz Kanade. Numeričnih spremenljivk je 7, opisnih pa 9. Tako imamo podatke od izobrazbe in zakonskega stana pa vse do plače. Prav `Salary` (plača) in `CLV` (skupna vrednost kupca) delujete asmitrično, dobro bi bilo da preverimo to še vizualno.
+Podatkovni okvir vsebuje podatke o članih programa zvestobe (Customer Loyalty History). Vsebuje 16,737 vrstic in 16 stolpcev, pri čemer vsaka vrstica predstavlja posamezenga člana iz Kanade. Numeričnih spremenljivk je 7, opisnih pa 9. Tako imamo podatke od izobrazbe in zakonskega stana pa vse do plače. Prav `Salary` (plača) in `CLV` (*Customer lifetime value - total invoice value for all flights ever booked by member* ali skupna vrednost kupca) delujete asmitrično, dobro bi bilo da preverimo to še vizualno.
 Spremenljivke z manjkajočimi vrednostmi so: `Salary` (25.32%),  `Cancellation Month` (87.65%) in `Cancellation Year` (87.65%). Pri prvi gre za prave manjkajoče vrednosti, pri zadnjih dveh pa vrednost NA pomeni, da član ni zapustil programa zvestobe, kot je to navedeno v pripadajočem gradivu *Airline Loyalty Program Promotion and Beyond_PS 2026*. 
 
 ```{r}
@@ -1072,5 +1073,28 @@ print(combined)
 
 Ni statistično značilnih razlik med skupinami v ostalih kategorijah, pri $a=0,05%$. 
 
+Poglejmo še kakšen je prispevek posamezne skupine `CLV` in kakšen delež celotne populacije posamezne skupine predstavljajo. 
+
+```{r}
+# filter
+seg_summary <- final_df %>%
+  filter(!is.na(segment)) %>%
+  group_by(segment) %>%
+  summarise(
+    n_customers = n(),
+    pct_customers = n() / nrow(.) * 100,
+    total_CLV = sum(CLV, na.rm = TRUE),
+    pct_CLV = sum(CLV, na.rm = TRUE) / sum(final_df$CLV, na.rm = TRUE) * 100,
+    avg_CLV = mean(CLV, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  arrange(segment)
+
+kable(seg_summary, digits = 2, 
+      caption = "Velikost posameznih skupin in njihov CLV",
+      col.names = c("Skupina", "N", "% Customers", "Total CLV", "% of CLV", "Avg CLV"))
+```
+
+Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi velikosti pa je komulativen prispevek 2. skupine največji `CLV` ($67.9$%), sledi 1. skupina ($21.9$%), na zadnjem mestu pa je 3. skupina ($10.2$%).
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
