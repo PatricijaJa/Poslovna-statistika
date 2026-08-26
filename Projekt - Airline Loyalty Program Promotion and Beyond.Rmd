@@ -12,8 +12,13 @@ knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
 ```
 
+```{r}
+set.seed(42)
+```
+
 ```{r knjiznice, include=FALSE}
 library(readr)
+library(patchwork)
 library(DataExplorer)
 library(ggplot2)
 library(tidyr)
@@ -24,6 +29,9 @@ library(lubridate)
 library(skimr)
 library(kableExtra)
 library(forcats)
+library(missForest)
+library(missRanger)
+library(factoextra)
 ```
 
 # Eksploratorna podatkovna analiza 
@@ -184,9 +192,6 @@ Link: [8.clanek]
 *Rahm, E., & Do, H. H. (2000).*
 Link: [9.clanek]
 (https://www.researchgate.net/publication/220282831_Data_Cleaning_Problems_and_Current_Approaches)
-
-
-
 
 # Ocena kakovosti podatkov
 
@@ -764,5 +769,306 @@ df %>%
 
 
 # (Tristan) Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
+
+Cilj je, da identificiramo stranke v segmente in ugotovimo kateri so tisti z visoko vrednostjo. Ker bomo uporabili za odkrivanje skupin v podatkovnem okvirju algoritem *k najbližjih sosedov (k-means)* moramo nujno spremenljivko `Salary` modelirati, saj boodo sicer NA vrednosti izključene iz algoritma. Za imputacijo bomo zaradi visokega deleža manjkajočih vrednosti in odvisnosti mankajoče vrednosti od opazovane spremenljivke same (samo nekateri izmed tistih z izobrazbo *College* ima mankajoče vrednosti) je potrebno uporabiti kompleksnejši multivariatni imputacijski algoritem. V tem primeru se odločimo za *missRanger*, ki deluje na principu naključnih gozdov. 
+
+```{r}
+# dodamo indikator manjkajoče plače in odliva
+Customer_Loyalty_History_Log <- Customer_Loyalty_History_Log %>%
+  mutate(
+    Salary_Missing = if_else(is.na(Salary), 1, 0),
+    churned = if_else(is.na(`Cancellation Year`), 0, 1)   # 1 = zapustil, 0 = aktiven
+  )
+
+# izključimo izvirna datuma, vključimo pa churned
+impute_exclude <- c("Postal Code", 
+                    "Enrollment Year", "Enrollment Month", 
+                    "Cancellation Year", "Cancellation Month")
+
+# pripravimo podatke za imputacijo – obdržimo Loyalty Number, Loyalty Card, churned, ...
+impute_data <- Customer_Loyalty_History_Log %>%
+  select(-any_of(impute_exclude)) %>%   # pika je bila odveč – zdaj je prav
+  mutate(across(where(is.character), as.factor))
+
+# odstranimo konstantne stolpce (npr. Country)
+constant_cols <- sapply(impute_data, function(x) length(unique(x)) == 1)
+impute_data <- impute_data[, !constant_cols, drop = FALSE]
+
+# churned = faktor (missRanger bolje obravnava faktorje)
+impute_data <- impute_data %>%
+  mutate(churned = as.factor(churned))
+
+# imputacija z missRanger
+set.seed(42)
+Customer_Loyalty_History_Imputed <- missRanger(
+  impute_data,
+  verbose = 0, # a izpiše narejene procente 
+  num.trees = 1000,
+  maxiter = 100
+)
+
+# sum(is.na(Customer_Loyalty_History_Imputed$Salary))  # mora biti 0
+```
+
+Zdaj uporabimo agregirane vrednosti in naredimo nov združen data frame. Kot smo videli prej je smiselno zaradi *k-means* algrotima logaritmirat agregirane vrednosti in jih skalirati (standardizirati). 
+
+```{r}
+loyalty_imputed <- Customer_Loyalty_History_Imputed %>%
+  select(`Loyalty Number`, Salary, CLV, Education, `Marital Status`, 
+         Gender, `Loyalty Card`, `Enrollment Type`, Salary_Missing, churned)
+
+# log
+activity_log <- Customer_Activity %>%
+  mutate(
+    log_total_flights    = log1p(total_flights_sum),
+    log_total_distance   = log1p(total_distance),
+    log_points_accum     = log1p(points_accumulated),
+    log_points_redeemed  = log1p(points_redeemed),
+    log_dollar_redeemed  = log1p(dollar_cost_redeemed),
+    log_avg_flights      = log1p(avg_flights_per_month)
+  ) %>%
+  select(`Loyalty Number`, starts_with("log_"), active_months, redemption_rate)
+
+# združeno za analizo
+final_df <- loyalty_imputed %>%
+  left_join(activity_log, by = "Loyalty Number")
+
+# preveri
+kable(summary(final_df))
+# sum(is.na(final_df$Salary))   # mora biti 0
+```
+
+```{r}
+set.seed(42)
+# spremenljivke za segmentacijo
+clust_vars <- c("log_total_flights", "log_total_distance", 
+                "log_points_accum", "log_points_redeemed",
+                "log_dollar_redeemed", "active_months", 
+                "redemption_rate", "Salary", "CLV")
+
+# pripravimo podatke za k-means 
+train_kmeans <- final_df %>%
+  select(all_of(clust_vars)) %>%
+  drop_na()   # varnostno, če bi kje ostal NA
+
+# skaliranje 
+train_kmeans_scaled <- scale(train_kmeans)
+
+# elbow
+wss <- sapply(2:6, function(k) {
+  kmeans(train_kmeans_scaled, centers = k, nstart = 25)$tot.withinss
+})
+
+plot(2:6, wss, type = "b", 
+     xlab = "Število skupin k", 
+     ylab = "Within-cluster sum of squares",
+     main = "Elbow plot")
+```
+Pri odločitvi za števila skupin si pomagamo z grafom, kjer iščemo optimalno število skupin ("koleno"). Odločimo se za 3 skupine. 
+
+```{r}
+set.seed(42)
+# izberemo k = 3 
+k_optimal <- 3
+km_final <- kmeans(train_kmeans_scaled, centers = k_optimal, nstart = 25)
+
+barve_skupin <- c("#E41A1C", "#377EB8", "#4DAF4A")
+
+# viz
+fviz_cluster(km_final, data = train_kmeans_scaled,
+             geom = "point",
+             ellipse.type = "convex",
+             palette = barve_skupin,
+             ggtheme = theme_minimal()) +
+  labs(title = paste0("K-means segmentacija (k = ", k_optimal, ")")) +
+  scale_color_manual(values = barve_skupin)   # enotne barve
+
+# toplotna karta centrov (interpretacija skupin)
+as.data.frame(km_final$centers) %>%
+  mutate(skupina = factor(row_number())) %>%
+  pivot_longer(-skupina, names_to = "spremenljivka", values_to = "vrednost") %>%
+  ggplot(aes(x = spremenljivka, y = skupina, fill = vrednost)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "steelblue", mid = "white", high = "firebrick",
+                       midpoint = 0) +
+  labs(x = NULL, y = "Skupina", fill = "Standardizirana\nvrednost") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Če pogledamo skupine osnovane na standardiziranih vrednostih dobimo tri skupine. 
+
+Skupina 1 to povprečno aktivni uporabniki. Za njih je značilno: zelo malo unovčenih dolarjev in točk, podpovprečna razdalja, število letov približno povprečno.
+
+Skupina 2 to so nadpovprečno aktivni uporabniki. Za njih je značilno: nekoliko nadpovprečno unovčevanje dolarjev in točk, ostala aktivnost blizu povprečja.
+
+Skupina 3 so podpovprečno redki/priložnostni leteči potniki. Za njih je značilno: zelo malo unovčenih dolarjev in točk, zelo malo zbranih točk, letijo precej manj in imajo nizko stopnjo unovčevanja.
+
+Spremenljivke active_months, CLV in Salary med skupinami ne kažejo velikih razlik, zato niso ključne za razlikovanje segmentov.
+
+```{r}
+set.seed(42)
+# spremenljivke za segmentacijo (iste kot prej) ---
+clust_vars <- c("log_total_flights", "log_total_distance", 
+                "log_points_accum", "log_points_redeemed",
+                "log_dollar_redeemed", "active_months", 
+                "redemption_rate", "Salary", "CLV")
+
+# brez NA
+complete_rows <- complete.cases(final_df[, clust_vars])
+sum(complete_rows)  # naj bo 16736 (ali manj)
+
+# matrika k-means
+train_kmeans <- final_df[complete_rows, clust_vars]   # uporabi indekse
+train_kmeans_scaled <- scale(train_kmeans)
+
+# final DF
+final_df$segment <- NA
+final_df$segment[complete_rows] <- km_final$cluster
+
+# so vsi
+table(final_df$segment, useNA = "ifany")   # mora biti 3 skupine + NA za tiste, ki so bili izpuščeni
+
+# povzetek
+final_df %>%
+  filter(!is.na(segment)) %>%
+  group_by(segment) %>%
+  summarise(across(c(Salary, CLV, log_total_flights, redemption_rate), 
+                   list(mean = ~mean(.), sd = ~sd(.))))
+```
+```{r}
+profile_data <- as.data.frame(km_final$centers) %>%
+  mutate(segment = factor(row_number())) %>%
+  pivot_longer(-segment, names_to = "spremenljivka", values_to = "vrednost")
+
+# porofilni črtni graf
+ggplot(profile_data, aes(x = spremenljivka, y = vrednost, 
+                         color = segment, group = segment)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = barve_skupin) +
+  labs(title = "Profili segmentov (standardizirani centroidi)",
+       x = "Spremenljivka", y = "Standardizirana vrednost",
+       color = "Segment") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Poglejmo še drugačno vizualizacijo porazdelitev spremenljivk glede na skupino.
+
+```{r}
+box_vars <- c("Salary", "CLV", "log_total_flights", "redemption_rate")
+
+# long
+box_data <- final_df %>%
+  filter(!is.na(segment)) %>%
+  select(segment, all_of(box_vars)) %>%
+  pivot_longer(-segment, names_to = "spremenljivka", values_to = "vrednost")
+
+# Boxploti
+ggplot(box_data, aes(x = factor(segment), y = vrednost, fill = factor(segment))) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  facet_wrap(~ spremenljivka, scales = "free_y") +
+  scale_fill_manual(values = barve_skupin) +
+  labs(title = "Porazdelitev ključnih spremenljivk po segmentih",
+       x = "Segment", y = "Vrednost") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+Poglejmo še kako se skupine razlikujejo po `Education`, `Marital Status`, `Gender`, `Loyalty Card`, `Enrollment Type`, `Province`. 
+
+```{r}
+# analiza kategorijskih spremenljivk po segmentih 
+# počistimo 
+final_df <- final_df %>%
+  select(-any_of(c("Province", "City")))
+
+# dodaj Province in City
+province_info <- Customer_Loyalty_History %>%
+  select(`Loyalty Number`, Province)
+
+city_info <- Customer_Loyalty_History %>%
+  select(`Loyalty Number`, City) %>%
+  mutate(City = fct_lump_n(City, n = 5, other_level = "Other"))
+
+final_df <- final_df %>%
+  left_join(province_info, by = "Loyalty Number") %>%
+  left_join(city_info, by = "Loyalty Number")
+
+# names(final_df)
+
+# sedaj definiraj seg_data
+seg_data <- final_df %>% filter(!is.na(segment))
+
+# nadaljuj z analizo (cat_vars, itd.)
+cat_vars <- c("Education", "Marital Status", "Gender", 
+              "Loyalty Card", "Enrollment Type", "Province", "City")
+
+# deleži
+get_seg_props <- function(var) {
+  seg_data %>%
+    group_by(segment, !!sym(var)) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(segment) %>%
+    mutate(prop = n / sum(n) * 100) %>%
+    ungroup() %>%
+    select(segment, category = !!sym(var), prop)
+}
+
+props_list <- lapply(cat_vars, get_seg_props)
+names(props_list) <- cat_vars
+
+```
+
+```{r}
+# po skupinah
+cat_long <- seg_data %>%
+  select(segment, all_of(cat_vars)) %>%
+  pivot_longer(-segment, names_to = "spremenljivka", values_to = "kategorija")
+
+cat_props <- cat_long %>%
+  group_by(segment, spremenljivka, kategorija) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(segment, spremenljivka) %>%
+  mutate(prop = n / sum(n) * 100) %>%
+  ungroup()
+
+# Hi-kvadrat s Cramer's V
+chisq_results <- sapply(cat_vars, function(var) {
+  tbl <- table(seg_data[[var]], seg_data$segment)
+  test <- chisq.test(tbl)
+  n <- sum(tbl)
+  cramer_v <- sqrt(test$statistic / (n * (min(dim(tbl)) - 1)))
+  c(statistic = round(test$statistic, 2), 
+    df = test$parameter,
+    p_value = round(test$p.value, 4),
+    cramer_v = round(cramer_v, 3))
+})
+
+t(chisq_results) %>%
+  as.data.frame() %>%
+  kable(caption = "Hi-kvadrat test in Cramer's V za razlike med segmenti")
+
+# združeni grafi
+plot_list <- list()
+for (var in cat_vars) {
+  p <- cat_props %>%
+    filter(spremenljivka == var) %>%
+    ggplot(aes(x = factor(segment), y = prop, fill = kategorija)) +
+    geom_col(position = "fill") +
+    scale_y_continuous(labels = scales::percent) +
+    labs(title = paste("Deleži kategorij za", var),
+         x = "Segment", y = "Delež", fill = var) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 0))
+  plot_list[[var]] <- p
+}
+
+# združi v mrežo
+combined <- wrap_plots(plot_list, ncol = 2)
+print(combined)
+```
+
+Ni statistično značilnih razlik med skupinami v ostalih kategorijah, pri $a=0,05%$. 
+
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
