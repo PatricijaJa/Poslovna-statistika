@@ -1,0 +1,1712 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Projekt - Airline Loyalty Program Promotion and Beyond},
+  pdfauthor={Manca Prošek, Tristan Dragan, Patricija Jaklič},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Projekt - Airline Loyalty Program Promotion and Beyond}
+\author{Manca Prošek, Tristan Dragan, Patricija Jaklič}
+\date{2026-08-14}
+
+\begin{document}
+\maketitle
+
+\section{Branje podatkov}\label{branje-podatkov}
+
+\subsection{1. Customer Flight
+Activity.csv}\label{customer-flight-activity.csv}
+
+Osnovne lastnosti podatkov (Customer Flight Activity): Št. vrstic:
+392,936 Št. stolpcev: 8 Ni manjkajočih podatkov/vrstic Vse spremenljivke
+so numerične Vse spremenljivke razen Loyalty Number in Month so
+asimetrične v desno.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pregled\_CFA }\OtherTok{\textless{}{-}} \FunctionTok{create\_report}\NormalTok{(Customer\_Flight\_Activity)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## 
+## processing file: report.rmd
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |                                     |   0%  |                                             |.                                    |   2%                                   |                                             |..                                   |   5% [global_options]                  |                                             |...                                  |   7%                                   |                                             |....                                 |  10% [introduce]                       |                                             |....                                 |  12%                                   |                                             |.....                                |  14% [plot_intro]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |......                               |  17%                                   |                                             |.......                              |  19% [data_structure]                  |                                             |........                             |  21%                                   |                                             |.........                            |  24% [missing_profile]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |..........                           |  26%                                   |                                             |...........                          |  29% [univariate_distribution_header]  |                                             |...........                          |  31%                                   |                                             |............                         |  33% [plot_histogram]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |.............                        |  36%                                   |                                             |..............                       |  38% [plot_density]                    |                                             |...............                      |  40%                                   |                                             |................                     |  43% [plot_frequency_bar]              |                                             |.................                    |  45%                                   |                                             |..................                   |  48% [plot_response_bar]               |                                             |..................                   |  50%                                   |                                             |...................                  |  52% [plot_with_bar]                   |                                             |....................                 |  55%                                   |                                             |.....................                |  57% [plot_normal_qq]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |......................               |  60%                                   |                                             |.......................              |  62% [plot_response_qq]                |                                             |........................             |  64%                                   |                                             |.........................            |  67% [plot_by_qq]                      |                                             |..........................           |  69%                                   |                                             |..........................           |  71% [correlation_analysis]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |...........................          |  74%                                   |                                             |............................         |  76% [principal_component_analysis]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |.............................        |  79%                                   |                                             |..............................       |  81% [bivariate_distribution_header]   |                                             |...............................      |  83%                                   |                                             |................................     |  86% [plot_response_boxplot]           |                                             |.................................    |  88%                                   |                                             |.................................    |  90% [plot_by_boxplot]                 |                                             |..................................   |  93%                                   |                                             |...................................  |  95% [plot_response_scatterplot]       |                                             |.................................... |  98%                                   |                                             |.....................................| 100% [plot_by_scatterplot]           
+\end{verbatim}
+
+\begin{verbatim}
+## output file: /Users/patricijajaklic/Documents/FAKS - statistika/2025:2026/Poslovna statistika/Poslovna statistik- Airline/report.knit.md
+\end{verbatim}
+
+\begin{verbatim}
+## /private/var/folders/51/r10wy95d4vx03_k0ln6yflrr0000gn/T/AppTranslocation/4815461A-3C6C-416C-999D-85E63FCF6DA7/d/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/pandoc +RTS -K512m -RTS '/Users/patricijajaklic/Documents/FAKS - statistika/2025:2026/Poslovna statistika/Poslovna statistik- Airline/report.knit.md' --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output pandocb3b16e4d4c9e.html --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/table-classes.lua --embed-resources --standalone --variable bs3=TRUE --section-divs --table-of-contents --toc-depth 6 --template /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmd/h/default.html --syntax-highlighting none --variable highlightjs=1 --variable theme=yeti --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /var/folders/51/r10wy95d4vx03_k0ln6yflrr0000gn/T//Rtmp0hECjK/rmarkdown-strb3b116bb7a1a.html
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Output created: report.html
+\end{verbatim}
+
+\subsection{2. Customer Loyalty
+History.csv}\label{customer-loyalty-history.csv}
+
+Osnovne lastnosti podatkov (Customer Loyalty History): Št. vrstic:
+16,737 Št. stolpcev: 16 Št. manjkajočih podatkov: 33,578 Št. popolnih
+vrstic: 1,540 Št. numeričnih spremenljivk: 7 Št. opisnih spremenljivk: 9
+Spremenljivke z manjkajočimi vrednostmi so: Salary (25.32\%),
+Cancellation Month (87.65\%) in Cancellation Year (87.65\%).
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pregled\_CLH }\OtherTok{\textless{}{-}} \FunctionTok{create\_report}\NormalTok{(Customer\_Loyalty\_History)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## 
+## processing file: report.rmd
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |                                     |   0%  |                                             |.                                    |   2%                                   |                                             |..                                   |   5% [global_options]                  |                                             |...                                  |   7%                                   |                                             |....                                 |  10% [introduce]                       |                                             |....                                 |  12%                                   |                                             |.....                                |  14% [plot_intro]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |......                               |  17%                                   |                                             |.......                              |  19% [data_structure]                  |                                             |........                             |  21%                                   |                                             |.........                            |  24% [missing_profile]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |..........                           |  26%                                   |                                             |...........                          |  29% [univariate_distribution_header]  |                                             |...........                          |  31%                                   |                                             |............                         |  33% [plot_histogram]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |.............                        |  36%                                   |                                             |..............                       |  38% [plot_density]                    |                                             |...............                      |  40%                                   |                                             |................                     |  43% [plot_frequency_bar]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |.................                    |  45%                                   |                                             |..................                   |  48% [plot_response_bar]               |                                             |..................                   |  50%                                   |                                             |...................                  |  52% [plot_with_bar]                   |                                             |....................                 |  55%                                   |                                             |.....................                |  57% [plot_normal_qq]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |......................               |  60%                                   |                                             |.......................              |  62% [plot_response_qq]                |                                             |........................             |  64%                                   |                                             |.........................            |  67% [plot_by_qq]                      |                                             |..........................           |  69%                                   |                                             |..........................           |  71% [correlation_analysis]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |...........................          |  74%                                   |                                             |............................         |  76% [principal_component_analysis]
+\end{verbatim}
+
+\begin{verbatim}
+##   |                                             |.............................        |  79%                                   |                                             |..............................       |  81% [bivariate_distribution_header]   |                                             |...............................      |  83%                                   |                                             |................................     |  86% [plot_response_boxplot]           |                                             |.................................    |  88%                                   |                                             |.................................    |  90% [plot_by_boxplot]                 |                                             |..................................   |  93%                                   |                                             |...................................  |  95% [plot_response_scatterplot]       |                                             |.................................... |  98%                                   |                                             |.....................................| 100% [plot_by_scatterplot]           
+\end{verbatim}
+
+\begin{verbatim}
+## output file: /Users/patricijajaklic/Documents/FAKS - statistika/2025:2026/Poslovna statistika/Poslovna statistik- Airline/report.knit.md
+\end{verbatim}
+
+\begin{verbatim}
+## /private/var/folders/51/r10wy95d4vx03_k0ln6yflrr0000gn/T/AppTranslocation/4815461A-3C6C-416C-999D-85E63FCF6DA7/d/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/pandoc +RTS -K512m -RTS '/Users/patricijajaklic/Documents/FAKS - statistika/2025:2026/Poslovna statistika/Poslovna statistik- Airline/report.knit.md' --to html4 --from markdown+autolink_bare_uris+tex_math_single_backslash --output pandocb3b15465495e.html --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/latex-div.lua --lua-filter /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmarkdown/lua/table-classes.lua --embed-resources --standalone --variable bs3=TRUE --section-divs --table-of-contents --toc-depth 6 --template /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library/rmarkdown/rmd/h/default.html --syntax-highlighting none --variable highlightjs=1 --variable theme=yeti --mathjax --variable 'mathjax-url=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /var/folders/51/r10wy95d4vx03_k0ln6yflrr0000gn/T//Rtmp0hECjK/rmarkdown-strb3b13c4cc627.html
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Output created: report.html
+\end{verbatim}
+
+\section{Viri}\label{viri}
+
+\subsection{Customer
+churn-----------------------------------------}\label{customer-churn}
+
+\subsection{1. članek/vir (osnove customer churn): Customer Churn
+Prediction: A Systematic Review of Recent Advances, Trends, and
+Challenges in Machine Learning and Deep
+Learning}\label{ux10dlanekvir-osnove-customer-churn-customer-churn-prediction-a-systematic-review-of-recent-advances-trends-and-challenges-in-machine-learning-and-deep-learning}
+
+\emph{Imani, M., Joudaki, M., Beikmohammadi, A., \& Arabnia, H. R.
+(2025)} Link: {[}1.clanek{]}
+(www.mdpi.com/2504-4990/7/3/105?utm\_source=chatgpt.com)
+
+\subsection{2. članek/vir: An asymmetrical approach to understanding con
+gurations of customer loyalty in the airline
+industry}\label{ux10dlanekvir-an-asymmetrical-approach-to-understanding-con-gurations-of-customer-loyalty-in-the-airline-industry}
+
+\emph{Catherine Prenticea, Sandra Maria Correia Loureirob} Link:
+{[}2.clanek{]}
+(\url{https://www.sciencedirect.com/science/article/pii/S0969698917301789?fr=RR-1&ref=cra_js_challenge})
+
+\subsection{3. članek/vir: Key drivers of passenger loyalty: A case of
+Frankfurt--Istanbul flights.
+(2016).}\label{ux10dlanekvir-key-drivers-of-passenger-loyalty-a-case-of-frankfurtistanbul-flights.-2016.}
+
+\emph{Journal of Air Transport Management} Link: {[}3.clanek{]}
+(\url{https://www.sciencedirect.com/science/article/pii/S0969699715300120?utm_source=chatgpt.com})
+
+\subsection{4. članek/vir: Frequent flyer programs in academic studies:
+A literature review of research progress since 2000.
+(2025).}\label{ux10dlanekvir-frequent-flyer-programs-in-academic-studies-a-literature-review-of-research-progress-since-2000.-2025.}
+
+\emph{Journal of Air Transport Management.} Link: {[}4.clanek{]}
+(\url{https://www.sciencedirect.com/science/article/pii/S0969699725001838?utm_source=chatgpt.com})
+
+\subsection{5. članek/vir: In Pursuit of Enhanced Customer Retention
+Management: Review, Key Issues, and Future
+Directions}\label{ux10dlanekvir-in-pursuit-of-enhanced-customer-retention-management-review-key-issues-and-future-directions}
+
+\emph{Ascarza, E., Neslin, S. A., Netzer, O., et al.~(2018)} Link:
+{[}5.clanek{]}
+(\url{https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf})
+
+\subsection{6. članek/vir: Beyond Accuracy: What Data Quality Means to
+Data Consumers.
+(2015)}\label{ux10dlanekvir-beyond-accuracy-what-data-quality-means-to-data-consumers.-2015}
+
+\emph{Richard Y. Wang \& Diane M. Strong} Link: {[}5.clanek{]}
+(\url{https://www.tandfonline.com/doi/abs/10.1080/07421222.1996.11518099})
+-\textgreater{} Kakovost podatkov
+
+\section{Ocena kakovosti podatkov}\label{ocena-kakovosti-podatkov}
+
+\section{Magisterska
+naloga-Janez-Bijec--------------------------------}\label{magisterska-naloga-janez-bijec}
+
+Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki
+kakovosti in učinkoviotsti oskrbe pacientov s koronarno boleznijo
+
+Izpiski: - Kdaj so podatki kakovostni? Kadar so ``fit for purpose'' -
+ocenjevanje kakovosti podatkov prilagodit vsaki analizi posebaj glede na
+njene zahteve - Avtor v svoji analizi uporabi dva načina: - 1. Na
+podlagi modela ocenjevanja in terminologije dimenzij kakovosti
+(prilagojen za elektronske zdravstvene podatke) (\emph{skladnost},
+\emph{celovitost}, \emph{prepričljivost - verjetnost}) - 2. konceptualni
+način
+
+\#\#1.NAČIN--------------------------------------------
+
+\subsection{MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ
+KAKOVOSTI}\label{model-ocenjevanja-in-terminologije-dimenzij-kakovosti}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\tightlist
+\item
+  SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo
+  pričakovani obliki in opisom v metapodatkih (poddimenzije: vrednostna
+  skladnost, relacijska skladnost, računska skladnost)
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  VREDNOSTNA skladnost: spol ima samo dve vrednosti, starost nima
+  negativnih vrednosti,\ldots{}
+\item
+  RELACIJSKA skladnost: omogočanje relacije med tabelami v bazi podatkov
+\item
+  RAČUNSKA pravilnost izpeljanih spremenljivk
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\alph{enumi}.}
+\setcounter{enumi}{1}
+\item
+  CELOVITOST - dimenzija kakovosti, ki ocenjuje prisotnost oz. odsotnost
+  (tudi frekvenco podatkov) ne da bi se ozirala na vrednosti, ki jih
+  podatki zavzemajo. Ta dimenzija kakovosti nima poddimenzij.
+\item
+  PREPRIČLJIVOST - VERJETNOST: dimenzija kakovosti, ki osredotoča na
+  same vrednosti, ki jih zavzemajo (imajo podatki) in poskuša odgovoriti
+  na vprašanje, kako vrednosti podatkov opisujejo realno stanje, koliko
+  jim je mogoče zaupati.
+\end{enumerate}
+
+Poddimenzije: - UNIKATNA PREPRIČLJIVOST (angl. Uniquness plausibility)
+podvajanje podatkov, tam kjer niso smiselni (npr. en identifikator
+pacienta je povezan z dvema spoloma ali dvema različnima glavnima
+diagnozama za isto hospitalizacijo) - NEČASOVNA PREPRIČLJIVOST (angl.
+Atemporal plausibility) Povezana z oceno koliko se vrednosti in
+porazdelitve vrednosti skladajo glede na neko splošno vedenje ali glede
+na nek zunanju standard. (npr. telesne višine pacientov se porazdeljuje
+normalno s povprečjem 170 cim in standardnim odklonom 15cm) - ČASOVNA
+PREPLIČLJIVOST (angl. Temporal plausibility) Smiselnost in pravilnost
+spreminjanja ali ohranjanja vrednosti spremenljivk glede na čas (npr.
+ali je telesna višina pri večini pacientov v adolescenci smiselno
+naraščala, odraslega pacienta pa ostala nespremenljena)
+
+\subsection{Ocenjevanje dimenzij
+kakovosti-----------------}\label{ocenjevanje-dimenzij-kakovosti}
+
+\subsection{1. VERTIFIKACIJA (angl.
+Vertification)}\label{vertifikacija-angl.-vertification}
+
+Temelji na podatkih kot takih na smiselnosti na ujemanju z omejitvami in
+strukturo na ekspertnih mnenjih in logičnih povezavah. \#\# 2.
+VALIDACIJA (angl. Validation) Temelji na preverjanju podatkov glede na
+nek zunanji vir, ki lahko predstavlja zlati standard.
+
+\#\#2.NAČIN-KONCEPTUALNI--------------------------------------------
+
+Avtor poskuša odkriti določene sistemske pomanjklivosti v podatkih.
+Ideja Weng in Casey -\textgreater{} predpostavka merljivih konceptov v
+medicini
+
+\#OCENA-KAKOVOSTI-PODATKOV-----------------------------
+
+Kakovost podatkov bomo preverili na podlagi šestih najbolj uporabljenih
+dimenzij od petnajstih, ki so navedeni v (6.članku). Odločili smo se za
+šest dimenzij na podlagi literature in praks.
+
+Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali
+pri naši analizi so: 1.Natančnost ali točnost\\
+2.Celovitost\\
+3.Doslednost\\
+4.Pravočasnost\\
+5.Veljavnost\\
+6.Enoličnost
+
+\subsection{Natančnost podatkov}\label{natanux10dnost-podatkov}
+
+``Natančnost podatkov pomeni, kako dobro se informacije ujemajo z
+dejstvi iz resničnega sveta. Natančnost podatkov se osredotoča na
+pravilnost in zanesljivost podatkov ter z agotavlja, da ti ne vsebujejo
+napak, ki bi nastale zaradi nepravilnega vnosa ali pomanjkljive
+obdelave. Primarni cilj zagotavljanja točnosti podatkov je prepoznavanje
+in odpravljanje napak v podatkovnih vrednostih, kot so napake pri
+prepisovanju, podvojeni vnosi in napačne vrednosti. Točnost podatkov se
+dosega z uporabo: -- čiščenja podatkov za prepoznavanje in odpravljanje
+napak ter neskladnosti v naborih podatkov, kot so odstranjevanje
+podvojenih zapisov, popravljanje tipkarskih napak in standardizacija
+podatkov; -- preverjanja veljavnosti podatkov s pomočjo vnaprej
+določenih pravil ali algoritmov za odkrivanje napak, neskladnosti in
+netočnosti v podatkih med postopkom vnosa ali naknadno; -- profiliranja
+podatkov za prepoznavanje vzorcev, trendov in nepravilnosti v naborih
+podatkov, ki lahko kažejo na netočnosti ali neskladnosti.''
+
+Za naše podatke nimamo zunanjih referenčnih virov s katerim bi lahko
+naredili neposredno primerjavo podatkov za preverjanje točnosti
+podatkov, ker nimamo neodvisnega vira točnosti podatkov ne moremo
+empirično dokazati. Zato bomo v nadaljevanju preverjali logična pravila
+in potencialne napačne oz ekstremne vrednosti.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(Customer\_Flight\_Activity)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  Loyalty Number        Year          Month        Total Flights   
+##  Min.   :100018   Min.   :2017   Min.   : 1.000   Min.   : 0.000  
+##  1st Qu.:327688   1st Qu.:2017   1st Qu.: 4.000   1st Qu.: 0.000  
+##  Median :551833   Median :2018   Median : 7.000   Median : 0.000  
+##  Mean   :550528   Mean   :2018   Mean   : 6.514   Mean   : 1.295  
+##  3rd Qu.:772194   3rd Qu.:2018   3rd Qu.:10.000   3rd Qu.: 2.000  
+##  Max.   :999986   Max.   :2018   Max.   :12.000   Max.   :28.000  
+##     Distance     Points Accumulated Points Redeemed Dollar Cost Points Redeemed
+##  Min.   :    0   Min.   :     0     Min.   :  0.0   Min.   :  0.000            
+##  1st Qu.:    0   1st Qu.:     0     1st Qu.:  0.0   1st Qu.:  0.000            
+##  Median :    0   Median :     0     Median :  0.0   Median :  0.000            
+##  Mean   : 1941   Mean   :  2027     Mean   : 31.3   Mean   :  5.636            
+##  3rd Qu.: 3018   3rd Qu.:  3039     3rd Qu.:  0.0   3rd Qu.:  0.000            
+##  Max.   :67284   Max.   :100926     Max.   :876.0   Max.   :158.000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(Customer\_Loyalty\_History)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  Loyalty Number     Country            Province             City          
+##  Min.   :100018   Length:16737       Length:16737       Length:16737      
+##  1st Qu.:326603   Class :character   Class :character   Class :character  
+##  Median :550434   Mode  :character   Mode  :character   Mode  :character  
+##  Mean   :549736                                                           
+##  3rd Qu.:772019                                                           
+##  Max.   :999986                                                           
+##                                                                           
+##  Postal Code           Gender           Education             Salary      
+##  Length:16737       Length:16737       Length:16737       Min.   :-58486  
+##  Class :character   Class :character   Class :character   1st Qu.: 59246  
+##  Mode  :character   Mode  :character   Mode  :character   Median : 73455  
+##                                                           Mean   : 79246  
+##                                                           3rd Qu.: 88518  
+##                                                           Max.   :407228  
+##                                                           NA's   :4238    
+##  Marital Status     Loyalty Card            CLV        Enrollment Type   
+##  Length:16737       Length:16737       Min.   : 1898   Length:16737      
+##  Class :character   Class :character   1st Qu.: 3981   Class :character  
+##  Mode  :character   Mode  :character   Median : 5780   Mode  :character  
+##                                        Mean   : 7989                     
+##                                        3rd Qu.: 8941                     
+##                                        Max.   :83325                     
+##                                                                          
+##  Enrollment Year Enrollment Month Cancellation Year Cancellation Month
+##  Min.   :2012    Min.   : 1.000   Min.   :2013      Min.   : 1.000    
+##  1st Qu.:2014    1st Qu.: 4.000   1st Qu.:2016      1st Qu.: 4.000    
+##  Median :2015    Median : 7.000   Median :2017      Median : 7.000    
+##  Mean   :2015    Mean   : 6.669   Mean   :2017      Mean   : 6.963    
+##  3rd Qu.:2017    3rd Qu.:10.000   3rd Qu.:2018      3rd Qu.:10.000    
+##  Max.   :2018    Max.   :12.000   Max.   :2018      Max.   :12.000    
+##                                   NA's   :14670     NA's   :14670
+\end{verbatim}
+
+Pri spremenljivki `Salary' je videti negativno vrednost, kar ni mogoče,
+zaradi obstoja minimalne plače in ker bi negativna vrednost pomenila, da
+moremo mi plačevati delodajalcu mesečno plačo.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(Customer\_Loyalty\_History, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ Salary)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{binwidth=}\DecValTok{10000}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{panel.grid =} \FunctionTok{element\_blank}\NormalTok{()) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}
+    \AttributeTok{title =} \StringTok{"Porazdelitev spremenljivke Salary"}\NormalTok{,}
+    \AttributeTok{x =} \StringTok{"Salary"}\NormalTok{,}
+    \AttributeTok{y =} \ConstantTok{NULL}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 4238 rows containing non-finite outside the scale range
+## (`stat_bin()`).
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-6-1.pdf}}
+
+\subsection{Kakovost podatkov - neurejena Manca
+koda}\label{kakovost-podatkov---neurejena-manca-koda}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# 2. KAKOVOST PODATKOV}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{flight }\OtherTok{\textless{}{-}}\NormalTok{ Customer\_Flight\_Activity}
+\NormalTok{loyalty }\OtherTok{\textless{}{-}}\NormalTok{ Customer\_Loyalty\_History}
+
+\CommentTok{\# 2a. Manjkajoče vrednosti}
+\FunctionTok{skim}\NormalTok{(flight)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule\noalign{}
+\endfirsthead
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Name & flight \\
+Number of rows & 392936 \\
+Number of columns & 8 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Column type frequency: & \\
+numeric & 8 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Group variables & None \\
+\end{longtable}
+
+\textbf{Variable type: numeric}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.2478}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0885}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.1239}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0885}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0885}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0619}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0531}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+sd
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p50
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p75
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p100
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+hist
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Loyalty Number & 0 & 1 & 550527.52 & 258604.58 & 100018 & 327688 &
+551833 & 772194 & 999986 & ▇▇▇▇▇ \\
+Year & 0 & 1 & 2017.51 & 0.50 & 2017 & 2017 & 2018 & 2018 & 2018 &
+▇▁▁▁▇ \\
+Month & 0 & 1 & 6.51 & 3.45 & 1 & 4 & 7 & 10 & 12 & ▇▅▅▅▇ \\
+Total Flights & 0 & 1 & 1.29 & 1.96 & 0 & 0 & 0 & 2 & 28 & ▇▁▁▁▁ \\
+Distance & 0 & 1 & 1941.44 & 3239.98 & 0 & 0 & 0 & 3018 & 67284 &
+▇▁▁▁▁ \\
+Points Accumulated & 0 & 1 & 2027.17 & 3872.14 & 0 & 0 & 0 & 3039 &
+100926 & ▇▁▁▁▁ \\
+Points Redeemed & 0 & 1 & 31.30 & 126.65 & 0 & 0 & 0 & 0 & 876 &
+▇▁▁▁▁ \\
+Dollar Cost Points Redeemed & 0 & 1 & 5.64 & 22.80 & 0 & 0 & 0 & 0 & 158
+& ▇▁▁▁▁ \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{skim}\NormalTok{(loyalty)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Data summary}\tabularnewline
+\toprule\noalign{}
+\endfirsthead
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Name & loyalty \\
+Number of rows & 16737 \\
+Number of columns & 16 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Column type frequency: & \\
+character & 9 \\
+numeric & 7 \\
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_ & \\
+Group variables & None \\
+\end{longtable}
+
+\textbf{Variable type: character}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.2162}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1351}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1892}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0541}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0541}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.0811}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1216}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 14\tabcolsep) * \real{0.1486}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+min
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+max
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+empty
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_unique
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+whitespace
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Country & 0 & 1 & 6 & 6 & 0 & 1 & 0 \\
+Province & 0 & 1 & 5 & 20 & 0 & 11 & 0 \\
+City & 0 & 1 & 4 & 14 & 0 & 29 & 0 \\
+Postal Code & 0 & 1 & 7 & 7 & 0 & 55 & 0 \\
+Gender & 0 & 1 & 4 & 6 & 0 & 2 & 0 \\
+Education & 0 & 1 & 6 & 20 & 0 & 5 & 0 \\
+Marital Status & 0 & 1 & 6 & 8 & 0 & 3 & 0 \\
+Loyalty Card & 0 & 1 & 4 & 6 & 0 & 3 & 0 \\
+Enrollment Type & 0 & 1 & 8 & 14 & 0 & 2 & 0 \\
+\end{longtable}
+}
+
+\textbf{Variable type: numeric}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.1597}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.1176}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0840}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 20\tabcolsep) * \real{0.0504}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+skim\_variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+n\_missing
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+complete\_rate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+mean
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+sd
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p0
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p25
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p50
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p75
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+p100
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+hist
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Loyalty Number & 0 & 1.00 & 549735.88 & 258912.13 & 100018.00 &
+326603.00 & 550434.00 & 772019.00 & 999986.00 & ▇▇▇▇▇ \\
+Salary & 4238 & 0.75 & 79245.61 & 35008.30 & -58486.00 & 59246.50 &
+73455.00 & 88517.50 & 407228.00 & ▁▇▁▁▁ \\
+CLV & 0 & 1.00 & 7988.90 & 6860.98 & 1898.01 & 3980.84 & 5780.18 &
+8940.58 & 83325.38 & ▇▁▁▁▁ \\
+Enrollment Year & 0 & 1.00 & 2015.25 & 1.98 & 2012.00 & 2014.00 &
+2015.00 & 2017.00 & 2018.00 & ▆▃▃▃▇ \\
+Enrollment Month & 0 & 1.00 & 6.67 & 3.40 & 1.00 & 4.00 & 7.00 & 10.00 &
+12.00 & ▇▅▅▅▇ \\
+Cancellation Year & 14670 & 0.12 & 2016.50 & 1.38 & 2013.00 & 2016.00 &
+2017.00 & 2018.00 & 2018.00 & ▃▃▅▆▇ \\
+Cancellation Month & 14670 & 0.12 & 6.96 & 3.46 & 1.00 & 4.00 & 7.00 &
+10.00 & 12.00 & ▆▃▅▅▇ \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Delež NA po stolpcu}
+\FunctionTok{map\_dbl}\NormalTok{(loyalty, }\SpecialCharTok{\textasciitilde{}}\FunctionTok{mean}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(.))) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{sort}\NormalTok{(}\AttributeTok{decreasing =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  Cancellation Year Cancellation Month             Salary     Loyalty Number 
+##          0.8765012          0.8765012          0.2532114          0.0000000 
+##            Country           Province               City        Postal Code 
+##          0.0000000          0.0000000          0.0000000          0.0000000 
+##             Gender          Education     Marital Status       Loyalty Card 
+##          0.0000000          0.0000000          0.0000000          0.0000000 
+##                CLV    Enrollment Type    Enrollment Year   Enrollment Month 
+##          0.0000000          0.0000000          0.0000000          0.0000000
+\end{verbatim}
+
+V izpisanih tabelah lahko vidimo, da podatki o letih nimajo manjkajočih
+vrednosti ter hitre histogramske porazdelitve posamičnih spremenljivk.
+Medtem ko pri podatkih o članih programa opazimo, da imamo manjkajoče
+vrednosti pri spremenljivki Salary in pa seveda pri spremenljivkama
+Cancellation Year in Month, ki pa niso manjkajoči podatki, vendar so to
+še aktualni člani in podatka enostavno ni. Tudi v teh podatkih lahko
+pogledamo histograme porazdelitev številskih spremenljivk.
+
+V nadaljnem smo pogledali le še delež manjkajočih vrednosti in opazimo,
+da je 87.6\% vseh članov še vedno aktivnih, kar je super odstotek in da
+nam pri spremenljivki o plačah manjka 25\% vrednosti. To so dejankse
+manjkajoče vrednosti, ki si jih želimo še malo bolj natančno pogledati,
+ali obstaja kakšen vzorec manjkajočnosti.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 2b. Dvojniki po ključu}
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Number}\StringTok{\textasciigrave{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(n }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) }\CommentTok{\# naj bo prazno {-} 1 vrstica na stranko}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 0 x 2
+## # i 2 variables: Loyalty Number <dbl>, n <int>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{flight  }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Number}\StringTok{\textasciigrave{}}\NormalTok{, Year, Month) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(n }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) }\CommentTok{\# naj bo prazno}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 3,847 x 4
+##    `Loyalty Number`  Year Month     n
+##               <dbl> <dbl> <dbl> <int>
+##  1           101902  2017     1     2
+##  2           101902  2017     2     2
+##  3           101902  2017     3     2
+##  4           101902  2017     4     2
+##  5           101902  2017     5     2
+##  6           101902  2017     6     2
+##  7           101902  2017     7     2
+##  8           101902  2017     8     2
+##  9           101902  2017     9     2
+## 10           101902  2017    10     2
+## # i 3,837 more rows
+\end{verbatim}
+
+Velik kazatelj kvalitetnih podatkov je tudi unikatnost vnosov, ker imamo
+namreč osebne podatke v eni datoteki, se tam dvojniki po številki
+zvestobe ne bi smeli prikazovati, prav tako bi v datoteki z leti vsak
+član moral imeti za vsak mesec v letu le en vnos.
+
+V zgornjem izpisu vidimo, da dvojnih vnosov o strankah ni, je pa kar
+veliko dvojnih vnosov v tabeli z leti, kar je lahko slab kazatelj
+kakovosti podatkov, ki pa zahteva nadaljni vpogled.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 2c. Ali imajo vsi poleti veljavno stranko v loyalty tabeli? (referenčna integriteta)}
+\FunctionTok{anti\_join}\NormalTok{(flight, loyalty, }\AttributeTok{by =} \StringTok{"Loyalty Number"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{nrow}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 2d. Osamelci / nesmiselne vrednosti}
+\FunctionTok{summary}\NormalTok{(flight}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Total Flights}\StringTok{\textasciigrave{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.000   0.000   1.295   2.000  28.000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(flight}\SpecialCharTok{$}\NormalTok{Distance)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0       0       0    1941    3018   67284
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{flight }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Total Flights}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \DecValTok{0} \SpecialCharTok{\&}\NormalTok{ Distance }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{) }\CommentTok{\# nekonsistentnost}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 0 x 8
+## # i 8 variables: Loyalty Number <dbl>, Year <dbl>, Month <dbl>,
+## #   Total Flights <dbl>, Distance <dbl>, Points Accumulated <dbl>,
+## #   Points Redeemed <dbl>, Dollar Cost Points Redeemed <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{flight }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Total Flights}\StringTok{\textasciigrave{}} \SpecialCharTok{\textgreater{}} \DecValTok{0} \SpecialCharTok{\&}\NormalTok{ Distance }\SpecialCharTok{==} \DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 0 x 8
+## # i 8 variables: Loyalty Number <dbl>, Year <dbl>, Month <dbl>,
+## #   Total Flights <dbl>, Distance <dbl>, Points Accumulated <dbl>,
+## #   Points Redeemed <dbl>, Dollar Cost Points Redeemed <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(loyalty}\SpecialCharTok{$}\NormalTok{Salary)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##  -58486   59246   73455   79246   88518  407228    4238
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(Salary }\SpecialCharTok{\textless{}} \DecValTok{0}\NormalTok{) }\CommentTok{\# negativna plača = napaka?}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 20 x 16
+##    `Loyalty Number` Country Province City  `Postal Code` Gender Education Salary
+##               <dbl> <chr>   <chr>    <chr> <chr>         <chr>  <chr>      <dbl>
+##  1           542976 Canada  Quebec   Mont~ H2Y 4R4       Male   High Sch~ -49830
+##  2           959977 Canada  British~ Vanc~ V5R 1W3       Female Bachelor  -12497
+##  3           232755 Canada  British~ Vanc~ V1E 4R6       Female Bachelor  -46683
+##  4           525245 Canada  British~ Vict~ V10 6T5       Male   Bachelor  -45962
+##  5           603070 Canada  British~ West~ V6V 8Z3       Female Bachelor  -19325
+##  6           491242 Canada  British~ Daws~ U5I 4F1       Male   Bachelor  -43234
+##  7           115505 Canada  Newfoun~ St. ~ A1C 6H9       Male   Bachelor  -10605
+##  8           430398 Canada  Newfoun~ St. ~ A1C 6H9       Male   Bachelor  -17534
+##  9           152016 Canada  Ontario  Toro~ P1J 8T7       Female Bachelor  -58486
+## 10           194065 Canada  Ontario  Sudb~ M5V 1G5       Female Bachelor  -31911
+## 11           212128 Canada  Ontario  Toro~ P2T 6G3       Male   Bachelor  -49001
+## 12           790475 Canada  Ontario  Tren~ K8V 4B2       Female Bachelor  -34079
+## 13           366599 Canada  Ontario  Toro~ M1R 4K3       Female Bachelor   -9081
+## 14           436087 Canada  Quebec   Mont~ H2T 9K8       Male   Bachelor  -46470
+## 15           364596 Canada  Quebec   Trem~ H5Y 2S9       Female Bachelor  -26322
+## 16           239955 Canada  Quebec   Hull  J8Y 3Z5       Female Bachelor  -47310
+## 17           347013 Canada  Quebec   Queb~ G1B 3L5       Male   Bachelor  -39503
+## 18           729561 Canada  Quebec   Queb~ G1B 3L5       Female Bachelor  -19332
+## 19           734647 Canada  Saskatc~ Regi~ S1J 3C5       Male   Bachelor  -46303
+## 20           906428 Canada  Yukon    Whit~ Y2K 6R0       Male   Bachelor  -57297
+## # i 8 more variables: `Marital Status` <chr>, `Loyalty Card` <chr>, CLV <dbl>,
+## #   `Enrollment Type` <chr>, `Enrollment Year` <dbl>, `Enrollment Month` <dbl>,
+## #   `Cancellation Year` <dbl>, `Cancellation Month` <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 2e. Konsistentnost kategorij}
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 2
+##   `Enrollment Type`     n
+##   <chr>             <int>
+## 1 2018 Promotion      971
+## 2 Standard          15766
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Card}\StringTok{\textasciigrave{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 3 x 2
+##   `Loyalty Card`     n
+##   <chr>          <int>
+## 1 Aurora          3429
+## 2 Nova            5671
+## 3 Star            7637
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(Education)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 2
+##   Education                n
+##   <chr>                <int>
+## 1 Bachelor             10475
+## 2 College               4238
+## 3 Doctor                 734
+## 4 High School or Below   782
+## 5 Master                 508
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Marital Status}\StringTok{\textasciigrave{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 3 x 2
+##   `Marital Status`     n
+##   <chr>            <int>
+## 1 Divorced          2518
+## 2 Married           9735
+## 3 Single            4484
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(Gender)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 2
+##   Gender     n
+##   <chr>  <int>
+## 1 Female  8410
+## 2 Male    8327
+\end{verbatim}
+
+Pogledali smo še, da imajo vsi vnosi v letih veljavno stranko, da so
+podatki o poletih v enem mesecu in razdalji smiselni, ter da ne obstaja
+vnos, ki bi imel nekonsistentno povezano razdaljo in število letov. Prav
+tako smo pogledali, da so plače članov programa smiselne, kjer smo
+opazili nekaj negativnih plač, ki jih bomo izbrisali iz vnosa in
+obravnavali kot manjkajoče podatke, saj ne moremo vedeti, ali so samo
+predznaki napaka ali je cel vnos napačen.
+
+\subsection{Popravek podatkov - neurejena Manca
+koda}\label{popravek-podatkov---neurejena-manca-koda}
+
+Tole mi ni čist všeč še. Cilji so: - odstraniti vse lete nepopolnih
+dvojnikov, ker ne vemo, kateri je pravi - odstraniti popolne dvojnike,
+ker lahko zaupamo, da so vseeno pravilne vrednosti - odstrani negativne
+plače
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# 3. ČIŠČENJE PODATKOV}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\DocumentationTok{\#\# 3.0 Čiščenje podvojenih vrstic v flight\_activity}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# Pravilo:}
+\DocumentationTok{\#\#   a) Če imajo vrstice z enakim ključem (Loyalty Number, Year, Month) RAZLIČNE vrednosti drugje {-}\textgreater{} ne vemo, katera je prava, zato odstranimo VSE.}
+\DocumentationTok{\#\#   b) Če so vrstice z enakim ključem POPOLNI dvojniki (identične povsod) {-}\textgreater{} zaupamo vrednosti in obdržimo eno kopijo.}
+
+\NormalTok{key\_cols }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"Loyalty Number"}\NormalTok{, }\StringTok{"Year"}\NormalTok{, }\StringTok{"Month"}\NormalTok{)}
+
+\CommentTok{\# Za vsako skupino preveri velikost skupine in št. dejansko različnih vrstic znotraj nje}
+\NormalTok{key\_dup\_summary }\OtherTok{\textless{}{-}}\NormalTok{ flight }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(}\FunctionTok{across}\NormalTok{(}\FunctionTok{all\_of}\NormalTok{(key\_cols))) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}
+    \AttributeTok{group\_size        =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{n\_distinct\_rows    =} \FunctionTok{n\_distinct}\NormalTok{(}\FunctionTok{pick}\NormalTok{(}\FunctionTok{everything}\NormalTok{())),}
+    \AttributeTok{.groups =} \StringTok{"drop"}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(group\_size }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{)}
+
+\CommentTok{\# Ključi, kjer je skupina POPOLN dvojnik (n\_distinct\_rows == 1 kljub group\_size \textgreater{} 1)}
+\NormalTok{full\_dup\_keys }\OtherTok{\textless{}{-}}\NormalTok{ key\_dup\_summary }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(n\_distinct\_rows }\SpecialCharTok{==} \DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\FunctionTok{all\_of}\NormalTok{(key\_cols))}
+
+\CommentTok{\# Ključi, kjer skupina NI popoln dvojnik (vrstice se med sabo razlikujejo)}
+\NormalTok{partial\_dup\_keys }\OtherTok{\textless{}{-}}\NormalTok{ key\_dup\_summary }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{filter}\NormalTok{(n\_distinct\_rows }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(}\FunctionTok{all\_of}\NormalTok{(key\_cols))}
+
+\FunctionTok{nrow}\NormalTok{(full\_dup\_keys)      }\CommentTok{\# št. ključev s popolnimi dvojniki (obdržimo 1 kopijo)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1904
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{nrow}\NormalTok{(partial\_dup\_keys)   }\CommentTok{\# št. ključev z nepopolnimi/sumljivimi dvojniki (odstranimo VSE)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1943
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Vpogled v primer nepopolnih dvojnikov}
+\NormalTok{flight }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{semi\_join}\NormalTok{(partial\_dup\_keys, }\AttributeTok{by =}\NormalTok{ key\_cols) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{arrange}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Number}\StringTok{\textasciigrave{}}\NormalTok{, Year, Month) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{head}\NormalTok{(}\DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 10 x 8
+##    `Loyalty Number`  Year Month `Total Flights` Distance `Points Accumulated`
+##               <dbl> <dbl> <dbl>           <dbl>    <dbl>                <dbl>
+##  1           101902  2017     4               1      667                  667
+##  2           101902  2017     4               1     2499                 2499
+##  3           101902  2017     5               3     7263                 7263
+##  4           101902  2017     5               2     3762                 3762
+##  5           101902  2017     6               3     4971                 4971
+##  6           101902  2017     6               3     5763                 5763
+##  7           101902  2017     8               5     3825                 3825
+##  8           101902  2017     8               4     8952                 8952
+##  9           101902  2017     9               2     3734                 3734
+## 10           101902  2017     9               1     2187                 2187
+## # i 2 more variables: `Points Redeemed` <dbl>,
+## #   `Dollar Cost Points Redeemed` <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Odstranitev:}
+\CommentTok{\#   (a) vse vrstice, ki pripadajo nepopolnim/sumljivim dvojnikom}
+\CommentTok{\#   (b) med preostalimi vrsticami odstranimo odvečne kopije popolnih dvojnikov}
+\NormalTok{flight\_clean }\OtherTok{\textless{}{-}}\NormalTok{ flight }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{anti\_join}\NormalTok{(partial\_dup\_keys, }\AttributeTok{by =}\NormalTok{ key\_cols) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{distinct}\NormalTok{()}
+
+\CommentTok{\# Poročilo o čiščenju}
+\NormalTok{n\_total            }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(flight)}
+\NormalTok{n\_removed\_partial  }\OtherTok{\textless{}{-}}\NormalTok{ flight }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{semi\_join}\NormalTok{(partial\_dup\_keys, }\AttributeTok{by =}\NormalTok{ key\_cols) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{nrow}\NormalTok{()}
+\NormalTok{n\_removed\_full\_dup }\OtherTok{\textless{}{-}}\NormalTok{ n\_total }\SpecialCharTok{{-}}\NormalTok{ n\_removed\_partial }\SpecialCharTok{{-}} \FunctionTok{nrow}\NormalTok{(flight\_clean)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Vrstic prej:"}\NormalTok{, n\_total, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Vrstic prej: 392936
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Odstranjenih (nepopolni dvojniki {-} vse vrstice skupine):"}\NormalTok{, n\_removed\_partial, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Odstranjenih (nepopolni dvojniki - vse vrstice skupine): 3894
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Odstranjenih (odvečne kopije popolnih dvojnikov):"}\NormalTok{, n\_removed\_full\_dup, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Odstranjenih (odvečne kopije popolnih dvojnikov): 1920
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Vrstic po čiščenju:"}\NormalTok{, }\FunctionTok{nrow}\NormalTok{(flight\_clean), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Vrstic po čiščenju: 387122
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Kontrola {-} noben ključ naj se več ne podvaja}
+\NormalTok{flight\_clean }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{count}\NormalTok{(}\FunctionTok{across}\NormalTok{(}\FunctionTok{all\_of}\NormalTok{(key\_cols))) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(n }\SpecialCharTok{\textgreater{}} \DecValTok{1}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 0 x 4
+## # i 4 variables: Loyalty Number <dbl>, Year <dbl>, Month <dbl>, n <int>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# 3.1 Odstranitev negativnih plač v loyalty\_history}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{n\_negative\_salary }\OtherTok{\textless{}{-}}\NormalTok{ loyalty }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(Salary }\SpecialCharTok{\textless{}} \DecValTok{0}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{nrow}\NormalTok{()}
+\NormalTok{n\_negative\_salary   }\CommentTok{\# 20}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 20
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loyalty\_clean }\OtherTok{\textless{}{-}}\NormalTok{ loyalty }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{Salary =} \FunctionTok{if\_else}\NormalTok{(Salary }\SpecialCharTok{\textless{}} \DecValTok{0}\NormalTok{, }\ConstantTok{NA\_real\_}\NormalTok{, Salary))}
+
+\DocumentationTok{\#\# 3.2 Agregacija po stranki (na podlagi flight\_clean)}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{customer\_activity }\OtherTok{\textless{}{-}}\NormalTok{ flight\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Number}\StringTok{\textasciigrave{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}
+    \AttributeTok{total\_flights\_sum    =} \FunctionTok{sum}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Total Flights}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{total\_distance       =} \FunctionTok{sum}\NormalTok{(Distance, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{points\_accumulated   =} \FunctionTok{sum}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Points Accumulated}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{points\_redeemed      =} \FunctionTok{sum}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Points Redeemed}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{dollar\_cost\_redeemed =} \FunctionTok{sum}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Dollar Cost Points Redeemed}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{active\_months        =} \FunctionTok{n\_distinct}\NormalTok{(}\FunctionTok{paste}\NormalTok{(Year, Month)),}
+    \AttributeTok{.groups =} \StringTok{"drop"}
+\NormalTok{  ) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{redemption\_rate       =} \FunctionTok{if\_else}\NormalTok{(points\_accumulated }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{,}
+\NormalTok{                                     points\_redeemed }\SpecialCharTok{/}\NormalTok{ points\_accumulated, }\DecValTok{0}\NormalTok{),}
+    \AttributeTok{avg\_flights\_per\_month =}\NormalTok{ total\_flights\_sum }\SpecialCharTok{/}\NormalTok{ active\_months}
+\NormalTok{  )}
+
+\NormalTok{df }\OtherTok{\textless{}{-}}\NormalTok{ loyalty\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{left\_join}\NormalTok{(customer\_activity, }\AttributeTok{by =} \StringTok{"Loyalty Number"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}
+    \AttributeTok{is\_promo\_2018 =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \StringTok{"2018 Promotion"}\NormalTok{,}
+    \AttributeTok{churned =} \SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Cancellation Year}\StringTok{\textasciigrave{}}\NormalTok{)}
+\NormalTok{  )}
+
+\FunctionTok{glimpse}\NormalTok{(df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Rows: 16,737
+## Columns: 26
+## $ `Loyalty Number`      <dbl> 480934, 549612, 429460, 608370, 530508, 193662, ~
+## $ Country               <chr> "Canada", "Canada", "Canada", "Canada", "Canada"~
+## $ Province              <chr> "Ontario", "Alberta", "British Columbia", "Ontar~
+## $ City                  <chr> "Toronto", "Edmonton", "Vancouver", "Toronto", "~
+## $ `Postal Code`         <chr> "M2Z 4K1", "T3G 6Y6", "V6E 3D9", "P1W 1K4", "J8Y~
+## $ Gender                <chr> "Female", "Male", "Male", "Male", "Male", "Male"~
+## $ Education             <chr> "Bachelor", "College", "College", "College", "Ba~
+## $ Salary                <dbl> 83236, NA, NA, NA, 103495, 51124, NA, 100159, 10~
+## $ `Marital Status`      <chr> "Married", "Divorced", "Single", "Single", "Marr~
+## $ `Loyalty Card`        <chr> "Star", "Star", "Star", "Star", "Star", "Star", ~
+## $ CLV                   <dbl> 3839.14, 3839.61, 3839.75, 3839.75, 3842.79, 384~
+## $ `Enrollment Type`     <chr> "Standard", "Standard", "Standard", "Standard", ~
+## $ `Enrollment Year`     <dbl> 2016, 2016, 2014, 2013, 2014, 2012, 2014, 2016, ~
+## $ `Enrollment Month`    <dbl> 2, 3, 7, 2, 10, 5, 6, 12, 5, 10, 3, 6, 1, 10, 11~
+## $ `Cancellation Year`   <dbl> NA, NA, 2018, NA, NA, NA, NA, NA, NA, NA, NA, NA~
+## $ `Cancellation Month`  <dbl> NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, NA, NA, N~
+## $ total_flights_sum     <dbl> 37, 58, 18, 35, 37, 0, 40, 41, 27, 44, 51, 31, 2~
+## $ total_distance        <dbl> 54525, 77487, 24803, 48432, 55515, 0, 61007, 728~
+## $ points_accumulated    <dbl> 54525, 77487, 24803, 48432, 55515, 0, 61007, 728~
+## $ points_redeemed       <dbl> 1418, 1971, 374, 1291, 0, 0, 1583, 733, 1516, 16~
+## $ dollar_cost_redeemed  <dbl> 256, 356, 67, 233, 0, 0, 285, 132, 274, 303, 90,~
+## $ active_months         <int> 24, 24, 24, 24, 24, 4, 24, 24, 24, 24, 24, 24, 2~
+## $ redemption_rate       <dbl> 0.026006419, 0.025436525, 0.015078821, 0.0266559~
+## $ avg_flights_per_month <dbl> 1.5416667, 2.4166667, 0.7500000, 1.4583333, 1.54~
+## $ is_promo_2018         <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,~
+## $ churned               <lgl> FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, ~
+\end{verbatim}
+
+Sedaj nimamo nobenih podvojenih vrednosti in negativnih plač, prav tako
+pa smo v customer activity združili osebne podatke o strankah in
+povzetek njihovih letalskih aktivnosti.
+
+\section{Vizualizacija}\label{vizualizacija}
+
+\section{(Manca) Razumeti dejavnike, ki vplivajo na vključenost v
+program zvestobe, in analizirati učinkovitost promocijske
+kampanje}\label{manca-razumeti-dejavnike-ki-vplivajo-na-vkljuux10denost-v-program-zvestobe-in-analizirati-uux10dinkovitost-promocijske-kampanje}
+
+\subsection{Učinkovitost 2018
+promocije}\label{uux10dinkovitost-2018-promocije}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# 4. UČINKOVITOST 2018 PROMOCIJE (primerjava skupin)}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# Opisna statistika po skupinah}
+\NormalTok{df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}
+    \AttributeTok{n =} \FunctionTok{n}\NormalTok{(),}
+    \AttributeTok{povp\_flights   =} \FunctionTok{mean}\NormalTok{(total\_flights\_sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_distance  =} \FunctionTok{mean}\NormalTok{(total\_distance, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_CLV       =} \FunctionTok{mean}\NormalTok{(CLV, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_accumulated =} \FunctionTok{mean}\NormalTok{(points\_accumulated, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_redeemed     =} \FunctionTok{mean}\NormalTok{(points\_redeemed, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_redemption\_rate =} \FunctionTok{mean}\NormalTok{(redemption\_rate, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{povp\_dollar\_redeemed =} \FunctionTok{mean}\NormalTok{(dollar\_cost\_redeemed, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{),}
+    \AttributeTok{churn\_rate     =} \FunctionTok{mean}\NormalTok{(churned, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{  )}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 10
+##   `Enrollment Type`     n povp_flights povp_distance povp_CLV povp_accumulated
+##   <chr>             <int>        <dbl>         <dbl>    <dbl>            <dbl>
+## 1 2018 Promotion      971         45.8        68827.    8047.          103240.
+## 2 Standard          15766         29.0        43437.    7985.           43437.
+## # i 4 more variables: povp_redeemed <dbl>, povp_redemption_rate <dbl>,
+## #   povp_dollar_redeemed <dbl>, churn_rate <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Statistični test: CLV med Standard in 2018 Promotion (Wilcoxon, ker CLV ni nujno normalno porazdeljen)}
+\FunctionTok{wilcox.test}\NormalTok{(CLV }\SpecialCharTok{\textasciitilde{}} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{data =}\NormalTok{ df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Wilcoxon rank sum test with continuity correction
+## 
+## data:  CLV by Enrollment Type
+## W = 7683302, p-value = 0.8432
+## alternative hypothesis: true location shift is not equal to 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# t{-}test za primerjavo povprečnega števila poletov}
+\FunctionTok{t.test}\NormalTok{(total\_flights\_sum }\SpecialCharTok{\textasciitilde{}} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{data =}\NormalTok{ df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Welch Two Sample t-test
+## 
+## data:  total_flights_sum by Enrollment Type
+## t = 24.987, df = 1042.6, p-value < 0.00000000000000022
+## alternative hypothesis: true difference in means between group 2018 Promotion and group Standard is not equal to 0
+## 95 percent confidence interval:
+##  15.54703 18.19698
+## sample estimates:
+## mean in group 2018 Promotion       mean in group Standard 
+##                     45.84758                     28.97558
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Chi{-}kvadrat: ali je tip kartice povezan z enrollment type?}
+\FunctionTok{chisq.test}\NormalTok{(}\FunctionTok{table}\NormalTok{(df}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, df}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Loyalty Card}\StringTok{\textasciigrave{}}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Pearson's Chi-squared test
+## 
+## data:  table(df$`Enrollment Type`, df$`Loyalty Card`)
+## X-squared = 0.68438, df = 2, p-value = 0.7102
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Testi razlik med skupinama}
+\FunctionTok{wilcox.test}\NormalTok{(points\_accumulated }\SpecialCharTok{\textasciitilde{}} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{data =}\NormalTok{ df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Wilcoxon rank sum test with continuity correction
+## 
+## data:  points_accumulated by Enrollment Type
+## W = 13176777, p-value < 0.00000000000000022
+## alternative hypothesis: true location shift is not equal to 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{wilcox.test}\NormalTok{(points\_redeemed }\SpecialCharTok{\textasciitilde{}} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{data =}\NormalTok{ df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Wilcoxon rank sum test with continuity correction
+## 
+## data:  points_redeemed by Enrollment Type
+## W = 5434755, p-value < 0.00000000000000022
+## alternative hypothesis: true location shift is not equal to 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{wilcox.test}\NormalTok{(redemption\_rate }\SpecialCharTok{\textasciitilde{}} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{data =}\NormalTok{ df)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Wilcoxon rank sum test with continuity correction
+## 
+## data:  redemption_rate by Enrollment Type
+## W = 4248464, p-value < 0.00000000000000022
+## alternative hypothesis: true location shift is not equal to 0
+\end{verbatim}
+
+Na prvi pogled nam opisna statistika pokaže, da je promocija iz leta
+2018 privabila 971 novih članov, ki so v obstoju naročnine leteli v
+povprečju kar 45-krat, medtem ko so normalne stranke letele le 29-krat v
+povprečju. Zelo hitro je jasno, da je promocija pripeljala stranke, ki
+so bolj pogosti uporabniki letalskih družb, kot standardno pridobljeni
+kartičarji.
+
+Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko)
+kažejo naslednje rezultate. Stranke, ki so se vključile preko promocije,
+so v opazovanjem obdobju v povprečju opravile skoraj 17 letov več od
+standardno vpisanih strank. Ta razlika je statistično visoko značilna,
+saj Welchov t-test vrne rezultate t = 24.987 in p-value \textless{}
+2.2e-16. Povprečni vrednosti vidni v tabeli pa sta za promocijsko
+skupino 45.8 in za standardno skupino 28.9.
+
+Po drugi strani pa se CLV (customer lifetime value) med skupinama
+praktično ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302
+in p-value = 0.8432. Promocija torej ni pritegnila strank z višjo
+dolgoročno vrednostjo, temveč zgolj bolj aktivne letalce.
+
+Na nadaljnih testih vidimo, da je zboranje in koriščenje točk visoko
+značilno med skupinama, vendar pa nam samo ta rezultat ne pove, katera
+skupina je bistveno boljša. Zato se obrnemo na tabelo s primerjavo, kjer
+opazimo, da medtem ko promocijski člani zberejo bistveno več točk
+zvestobe, so standardno včlanjeni člani tisti, ki jih več porabijo.
+Redemption rate je v povprečju pri standardnih članih 1.7\%, medtem ko
+je pri promocijskih le 0.4\%.
+
+Zato je zanimivo, da je promocija privabila stranke, ki letijo veliko,
+se pa ne ozirajo dosti na koriščenje ugodnosti, ki jih program nudi.
+Potrebna bi bila nadaljna obravnava po plačilnem razredu in izobrazbi,
+vendar sklep je, da stranke, ki veliko letijo nimajo finančnih zadržkov
+in jim tako točke zvestobe niso pomemben del programa. Morda so jim bolj
+važne druge ugodnosti, ki jih program zvestobe nudi, vendar teh podatkov
+pa žal nimamo.
+
+Tip kartice zvestobe (Star/Nova/Aurora) pa ni statistično povezan s
+tipom vpisa, saj je Chi test vrnil rezultete X-squared = 0.68438 in
+p-value = 0.7102. Promocija torej ni bila bolj privlačna za določen
+segment kartic.
+
+Pomembna opomba je, da ker gre za opazovalne podatke, višja aktivnost
+promocijske skupine ne pomeni nujno, da je promocija vzročno povečala
+angažiranost. Enako verjeten scenarij je samoselekcija, in sicer da so
+se bolj pogosti letalci raje odločili za vključitev preko promocije. Za
+bolj zanesljiv vzročni zaključek bi bilo treba primerjati angažiranost
+istih strank pred in po vpisu.
+
+Primerjaj v tabeli iz poglavja 4: pri Standard skupini je povp\_distance
+= 43.437 in povp\_accumulated = 43.437 --- popolnoma identično. Pri 2018
+Promotion skupini pa je povp\_distance = 68.827, povp\_accumulated =
+103.240, kar je natanko 1,5-kratnik. To ni naključje --- nakazuje, da
+imajo promocijske stranke 1,5× množitelj točk na prevoženi km,
+standardne pa 1×. To je pomembna ugotovitev za tvojo nalogo
+``učinkovitost promocije'': pomeni, da promocijska kampanja verjetno ni
+bila zgolj marketinška (privabi nove člane), ampak je vključevala tudi
+strukturno bonus stopnjo nabiranja točk kot del ponudbe. To delno
+pojasni, zakaj promocijski člani nabirajo tako veliko več točk --- ne le
+zaradi več letov, temveč tudi zaradi ugodnejšega razmerja točk/km.
+Priporočam, da to eksplicitno preveriš in izpostaviš:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{tocke\_na\_km =} \FunctionTok{sum}\NormalTok{(points\_accumulated, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(total\_distance, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 2 x 2
+##   `Enrollment Type` tocke_na_km
+##   <chr>                   <dbl>
+## 1 2018 Promotion            1.5
+## 2 Standard                  1
+\end{verbatim}
+
+To bi lepo dopolnilo tvoj odstavek o tem, zakaj promocijski člani
+``zberejo bistveno več točk, a jih manj unovčijo'' --- zdaj imaš razlago
+tudi za zakaj zbirajo toliko več, ne le hipotezo o vedenju.
+
+Manjkajo: - pogled tudi po izobrazbi in prihodku.
+
+\subsection{Faktorji, ki vplivajo na
+engagement}\label{faktorji-ki-vplivajo-na-engagement}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# 5. FAKTORJI, KI VPLIVAJO NA ENGAGEMENT}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# Korelacija numeričnih spremenljivk z engagementom}
+\NormalTok{df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(Salary, CLV, total\_flights\_sum, total\_distance, redemption\_rate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{cor}\NormalTok{(}\AttributeTok{use =} \StringTok{"pairwise.complete.obs"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                         Salary          CLV total_flights_sum total_distance
+## Salary             1.000000000 -0.021016986      -0.001653776   -0.002261964
+## CLV               -0.021016986  1.000000000      -0.006916046   -0.005992790
+## total_flights_sum -0.001653776 -0.006916046       1.000000000    0.967839881
+## total_distance    -0.002261964 -0.005992790       0.967839881    1.000000000
+## redemption_rate    0.009981686 -0.006658419       0.015660545   -0.004235114
+##                   redemption_rate
+## Salary                0.009981686
+## CLV                  -0.006658419
+## total_flights_sum     0.015660545
+## total_distance       -0.004235114
+## redemption_rate       1.000000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(reshape2)  }\CommentTok{\# za melt(), ali uporabi tidyr::pivot\_longer}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Attaching package: 'reshape2'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:data.table':
+## 
+##     dcast, melt
+\end{verbatim}
+
+\begin{verbatim}
+## The following object is masked from 'package:tidyr':
+## 
+##     smiths
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{cor\_matrix }\OtherTok{\textless{}{-}}\NormalTok{ df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{select}\NormalTok{(Salary, CLV, total\_flights\_sum, total\_distance, redemption\_rate) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{cor}\NormalTok{(}\AttributeTok{use =} \StringTok{"pairwise.complete.obs"}\NormalTok{)}
+
+\NormalTok{cor\_long }\OtherTok{\textless{}{-}} \FunctionTok{melt}\NormalTok{(cor\_matrix)}
+
+\FunctionTok{ggplot}\NormalTok{(cor\_long, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ Var1, }\AttributeTok{y =}\NormalTok{ Var2, }\AttributeTok{fill =}\NormalTok{ value)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_tile}\NormalTok{(}\AttributeTok{color =} \StringTok{"white"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_text}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{label =} \FunctionTok{round}\NormalTok{(value, }\DecValTok{2}\NormalTok{)), }\AttributeTok{color =} \StringTok{"black"}\NormalTok{, }\AttributeTok{size =} \DecValTok{4}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{scale\_fill\_gradient2}\NormalTok{(}\AttributeTok{low =} \StringTok{"steelblue"}\NormalTok{, }\AttributeTok{mid =} \StringTok{"white"}\NormalTok{, }\AttributeTok{high =} \StringTok{"firebrick"}\NormalTok{,}
+                        \AttributeTok{midpoint =} \DecValTok{0}\NormalTok{, }\AttributeTok{limits =} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{), }\AttributeTok{name =} \StringTok{"r"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Korelacijska matrika: Salary, CLV in engagement metrike"}\NormalTok{,}
+       \AttributeTok{x =} \ConstantTok{NULL}\NormalTok{, }\AttributeTok{y =} \ConstantTok{NULL}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{axis.text.x =} \FunctionTok{element\_text}\NormalTok{(}\AttributeTok{angle =} \DecValTok{45}\NormalTok{, }\AttributeTok{hjust =} \DecValTok{1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-14-1.pdf}}
+
+Na grafu korelacije vidimo, da ni absolutno nobene korelacije, ki bi
+pojasnila aktivnost.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Linearni model: kaj napoveduje število poletov?}
+\NormalTok{model }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(total\_flights\_sum }\SpecialCharTok{\textasciitilde{}}\NormalTok{ Salary }\SpecialCharTok{+}\NormalTok{ Education }\SpecialCharTok{+} \StringTok{\textasciigrave{}}\AttributeTok{Marital Status}\StringTok{\textasciigrave{}} \SpecialCharTok{+}
+\NormalTok{              Gender }\SpecialCharTok{+} \StringTok{\textasciigrave{}}\AttributeTok{Loyalty Card}\StringTok{\textasciigrave{}} \SpecialCharTok{+}\NormalTok{ is\_promo\_2018, }\AttributeTok{data =}\NormalTok{ df)}
+\FunctionTok{summary}\NormalTok{(model)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = total_flights_sum ~ Salary + Education + `Marital Status` + 
+##     Gender + `Loyalty Card` + is_promo_2018, data = df)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -47.131 -11.438   3.879  11.925  58.121 
+## 
+## Coefficients:
+##                                   Estimate   Std. Error t value
+## (Intercept)                   27.842309870  0.670703444  41.512
+## Salary                         0.000004200  0.000006268   0.670
+## EducationDoctor               -0.216336591  0.911056343  -0.237
+## EducationHigh School or Below  0.453265122  0.609818543   0.743
+## EducationMaster                0.485052968  0.773201749   0.627
+## `Marital Status`Married        0.377154059  0.399097535   0.945
+## `Marital Status`Single         0.281474003  0.505460426   0.557
+## GenderMale                     0.186506474  0.292140790   0.638
+## `Loyalty Card`Nova             0.168137710  0.403374806   0.417
+## `Loyalty Card`Star             0.519243046  0.387278518   1.341
+## is_promo_2018TRUE             16.937215090  0.629640551  26.900
+##                                          Pr(>|t|)    
+## (Intercept)                   <0.0000000000000002 ***
+## Salary                                      0.503    
+## EducationDoctor                             0.812    
+## EducationHigh School or Below               0.457    
+## EducationMaster                             0.530    
+## `Marital Status`Married                     0.345    
+## `Marital Status`Single                      0.578    
+## GenderMale                                  0.523    
+## `Loyalty Card`Nova                          0.677    
+## `Loyalty Card`Star                          0.180    
+## is_promo_2018TRUE             <0.0000000000000002 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 16.31 on 12467 degrees of freedom
+##   (4259 observations deleted due to missingness)
+## Multiple R-squared:  0.05511,    Adjusted R-squared:  0.05435 
+## F-statistic: 72.71 on 10 and 12467 DF,  p-value: < 0.00000000000000022
+\end{verbatim}
+
+Korelacijska matrika pokaže, da so povezave med Salary, CLV in metrikami
+angažiranosti (št. poletov, razdalja, redemption rate) praktično ničelne
+(vse \textbar r\textbar{} \textless{} 0,03) -- plača in CLV torej sama
+po sebi ne napovedujeta, koliko stranka leti. Pričakovano je le zelo
+visoka korelacija med total\_flights\_sum in total\_distance (r = 0,97),
+kar je logično, saj gre za dve meri istega pojava (več poletov = več
+prepotovanih km), zato ju v modelu ne smemo uporabljati skupaj kot
+neodvisni spremenljivki.
+
+Linearni model (total\_flights\_sum \textasciitilde{} Salary + Education
++ Marital Status + Gender + Loyalty Card + is\_promo\_2018) potrjuje ta
+vtis: edini statistično značilen napovednik je is\_promo\_2018 (+17,1
+poleta, p \textless{} 0,001). Vse demografske spremenljivke -- plača,
+izobrazba, zakonski stan, spol in tip kartice -- niso statistično
+značilne napovednice angažiranosti. Model kot celota pojasni le 5,7 \%
+variance (R² = 0,057), kar je nizko in kaže, da glavni dejavniki
+angažiranosti niso zajeti v razpoložljivih demografskih spremenljivkah,
+temveč verjetno v vedenjskih ali časovnih dejavnikih (npr. namen
+potovanja, sezona, življenjski dogodki), ki jih v tem naboru podatkov
+nimamo.
+
+Sklep: demografija (kdo je stranka) pojasnjuje presenetljivo malo o tem,
+kako pogosto stranka leti -- edini dejavnik z jasnim in močnim učinkom
+je pripadnost 2018 promocijski kohorti.
+
+\subsection{Vizualizacija}\label{vizualizacija-1}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\DocumentationTok{\#\# 6. VIZUALIZACIJE}
+\DocumentationTok{\#\# {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# 6a. Distribucija CLV po enrollment tipu (boxplot {-} primerjava skupin, robusten na osamelce)}
+\FunctionTok{ggplot}\NormalTok{(df, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{y =}\NormalTok{ CLV, }\AttributeTok{fill =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{(}\AttributeTok{outlier.alpha =} \FloatTok{0.3}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"CLV glede na tip vpisa v program zvestobe"}\NormalTok{,}
+       \AttributeTok{y =} \StringTok{"Customer Lifetime Value"}\NormalTok{, }\AttributeTok{x =} \ConstantTok{NULL}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-16-1.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 6b. Časovna vrsta: povprečno število poletov na mesec po letih (učinek promocije v času)}
+\NormalTok{flight\_clean }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(Year, Month) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{povp\_flights =} \FunctionTok{mean}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Total Flights}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\AttributeTok{.groups =} \StringTok{"drop"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{mutate}\NormalTok{(}\AttributeTok{date =} \FunctionTok{make\_date}\NormalTok{(Year, Month, }\DecValTok{1}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ date, }\AttributeTok{y =}\NormalTok{ povp\_flights)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_line}\NormalTok{(}\AttributeTok{color =} \StringTok{"steelblue"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{geom\_vline}\NormalTok{(}\AttributeTok{xintercept =} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{make\_date}\NormalTok{(}\DecValTok{2018}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{)),}
+             \AttributeTok{linetype =} \StringTok{"dashed"}\NormalTok{, }\AttributeTok{color =} \StringTok{"red"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Povprečno število poletov skozi čas"}\NormalTok{,}
+       \AttributeTok{subtitle =} \StringTok{"Rdeča črta = začetek 2018 promocije"}\NormalTok{,}
+       \AttributeTok{x =} \ConstantTok{NULL}\NormalTok{, }\AttributeTok{y =} \StringTok{"Povp. Total Flights"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in scale_x_date(): A <numeric> value was passed to a Date scale.
+## i The value was converted to a <Date> object.
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-16-2.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 6c. Redemption rate po tipu kartice in enrollment tipu}
+\FunctionTok{ggplot}\NormalTok{(df, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =} \StringTok{\textasciigrave{}}\AttributeTok{Loyalty Card}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{y =}\NormalTok{ redemption\_rate, }\AttributeTok{fill =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_boxplot}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Stopnja unovčitve točk po tipu kartice in vpisa"}\NormalTok{,}
+       \AttributeTok{y =} \StringTok{"Redemption rate"}\NormalTok{, }\AttributeTok{x =} \StringTok{"Loyalty Card"}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Removed 1 row containing non-finite outside the scale range
+## (`stat_boxplot()`).
+\end{verbatim}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-16-3.pdf}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# 6d. Churn rate po enrollment tipu (bar chart {-} deleži)}
+\NormalTok{df }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{group\_by}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{summarise}\NormalTok{(}\AttributeTok{churn\_rate =} \FunctionTok{mean}\NormalTok{(churned)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{ggplot}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{, }\AttributeTok{y =}\NormalTok{ churn\_rate, }\AttributeTok{fill =} \StringTok{\textasciigrave{}}\AttributeTok{Enrollment Type}\StringTok{\textasciigrave{}}\NormalTok{)) }\SpecialCharTok{+}
+  \FunctionTok{geom\_col}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{scale\_y\_continuous}\NormalTok{(}\AttributeTok{labels =}\NormalTok{ scales}\SpecialCharTok{::}\NormalTok{percent) }\SpecialCharTok{+}
+  \FunctionTok{labs}\NormalTok{(}\AttributeTok{title =} \StringTok{"Delež odpovedi članstva po tipu vpisa"}\NormalTok{, }\AttributeTok{y =} \StringTok{"Churn rate"}\NormalTok{, }\AttributeTok{x =} \ConstantTok{NULL}\NormalTok{) }\SpecialCharTok{+}
+  \FunctionTok{theme\_minimal}\NormalTok{() }\SpecialCharTok{+}
+  \FunctionTok{theme}\NormalTok{(}\AttributeTok{legend.position =} \StringTok{"none"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\pandocbounded{\includegraphics[keepaspectratio]{Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/Projekt---Airline-Loyalty-Program-Promotion-and-Beyond_files/figure-latex/unnamed-chunk-16-4.pdf}}
+
+\section{(Tristan) Identificirajte segmente strank z visoko vrednostjo
+in predlagajte možne ukrepe za
+optimizacijo}\label{tristan-identificirajte-segmente-strank-z-visoko-vrednostjo-in-predlagajte-moux17ene-ukrepe-za-optimizacijo}
+
+\section{(Patricija) Napovedovanje odliva strank oziroma odpovedi ter
+predlaganje možnih ukrepov za njihovo
+zadržanje}\label{patricija-napovedovanje-odliva-strank-oziroma-odpovedi-ter-predlaganje-moux17enih-ukrepov-za-njihovo-zadrux17eanje}
+
+\end{document}
