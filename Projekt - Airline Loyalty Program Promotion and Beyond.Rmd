@@ -56,6 +56,7 @@ Customer_Flight_Activity %>%
   select(-`Loyalty Number`) %>%
   plot_histogram(ncol=3L)
 ```
+
 Vizualizacija potrdi naše sume glede močne (desne) asimetričnosti podatkov. Ta nam lahko v nadaljnjih analizah, kjer predpostavljamo normalnost, povzroča velike težave. Poskusimo jo odpraviti z logaritmiranjem. 
 
 ```{r}
@@ -76,8 +77,8 @@ Customer_Flight_Activity_Log %>%
   select(-`Loyalty Number`, -`Month`) %>%
   plot_histogram(ncol=3L)
 ```
-Pri večini spremenljivk se z logaritmiranjem precej popravimo asimetričnost, v primeru `Points Redeemed` (vnovčene točke) se celo približamo normalni porazdelitvi, pri `Total Flights` (vsi leti) pa vsaj nekoliko zmanjšamo asimetričnost.  
 
+Pri večini spremenljivk se z logaritmiranjem precej popravimo asimetričnost, v primeru `Points Redeemed` (vnovčene točke) se celo približamo normalni porazdelitvi, pri `Total Flights` (vsi leti) pa vsaj nekoliko zmanjšamo asimetričnost.  
 
 ## 2. Customer Loyalty History.csv
 ```{r message=FALSE, warning=FALSE, include=FALSE}
@@ -116,6 +117,7 @@ Customer_Loyalty_History %>%
   ) %>%
   plot_bar()
 ```
+
 Spremenljvka `City` ima 29 kategorij, `Postal Code` pa kar 55, zaradi lažje preglednosti na grafih je dodana še kategorija $"Other"$. `Salary` in `CLV` sta močno (desno) asmietrična zato ju tako kot prejšnje spremenljivke logaritmiramo. Prav tako smo pri spremenljivki `Salary` smo zaznali negativne vrednosti. Pri plači pričakujemo samo pozitivne vrednosti zato bomo v nadaljevanju po principu čiščenja in ocenjevanja kakovosti podatkov obravnavali te vrednosti kot manjkajoče. 
 
 ```{r}
@@ -141,6 +143,7 @@ Customer_Loyalty_History_Log %>%
   select(`CLV`, `Salary`) %>%
   plot_histogram(ncol=4L)
 ```
+
 Z logaritmiranjem `Salary` in `CLV` smo delno odpravili močno asimeričnost, ki je bila prisotna prej.
 
 
@@ -277,7 +280,7 @@ analizi so:
 
 ## 1.Natančnost podatkov
 
-"Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz 
+Natančnost podatkov pomeni, kako dobro se informacije ujemajo z dejstvi iz 
 resničnega sveta.
 Natančnost podatkov se osredotoča na pravilnost in zanesljivost podatkov ter 
 zagotavlja, da ti ne vsebujejo napak, ki bi nastale zaradi nepravilnega vnosa 
@@ -449,7 +452,6 @@ Customer_Loyalty_History <- Customer_Loyalty_History %>%
     Salary = if_else(Salary < 0, NA_real_, Salary)
   )
 ```
-
 
 ## 6.Enoličnost
 
