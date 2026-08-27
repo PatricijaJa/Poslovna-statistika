@@ -197,6 +197,33 @@ Link: [8.clanek]
 Link: [9.clanek]
 (https://www.researchgate.net/publication/220282831_Data_Cleaning_Problems_and_Current_Approaches)
 
+10. članek/vir (Manca): The Long-Term Impact of Loyalty Programs on Consumer Purchase Behavior and Loyalty. Journal of Marketing
+*Liu, Y. (2007).*
+Link: [10.clanek]
+(https://www.researchgate.net/publication/237396598_The_Long-Term_Impact_of_Loyalty_Programs_on_Consumer_Purchase_Behavior_and_Loyalty)
+
+11. članek/vir (Manca): Understanding the Effect of Customer Relationship Management Efforts on Customer Retention and Customer Share Development. Journal of Marketing
+*Verhoef, P. C. (2003).*
+Link: [11.clanek]
+(https://www.researchgate.net/publication/242113836_Understanding_the_Effect_of_Customer_Relationship_Management_Efforts_on_Customer_Retention_and_Customer_Share_Development)
+
+12. članek/vir (Manca): Loyalty Programmes: Current Knowledge and Research Directions. International Journal of Management Reviews
+*Dorotic, M., Bijmolt, T. H. A., & Verhoef, P. C. (2011).*
+Link: [12.clanek]
+(https://www.researchgate.net/publication/229915137_Loyalty_Programmes_Current_Knowledge_and_Research_Directions)
+
+13. članek/vir (Manca): Perceived benefits of loyalty programs: Scale development and implications for relational strategies. Journal of Business Research
+*Mimouni-Chaabane, A., & Volle, P. (2009).*
+Link: [13.clanek]
+(https://www.sciencedirect.com/science/article/abs/pii/S0148296309000198)
+
+14. članek/vir (Manca): Review of the theoretical underpinnings of loyalty programs. Journal of Consumer Psychology
+*Henderson, C. M., Beck, J. T., & Palmatier, R. W. (2011).*
+Link: [14.clanek]
+(https://www.semanticscholar.org/paper/Review-of-the-theoretical-underpinnings-of-loyalty-Henderson-Beck/61ee71d3519da2034b51d2d03132916b2f351300)
+
+
+
 # Ocena kakovosti podatkov
 
 # Magisterska naloga-Janez-Bijec--------------------------------
@@ -588,6 +615,22 @@ glimpse(df)
 
 
 # (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
+
+1. Dejavniki angažiranja: večdimenzionalne koristi in heterogenost uporabnikov
+
+Angažiranje v programih zvestobe poganja več vrst koristi, od denarne prihranke, raziskovanja, zabave do prepoznave in socialne koristi (Mimouni-Chaabane & Volle, 2009). Denarni prihranki so sicer najpomembnejši motivator za vključitev, vendar hedonske in simbolne koristi postanejo ključne za dolgoročno ohranjanje odnosa (Dorotic, Bijmolt & Verhoef, 2011). Še pomembneje je, da se odziv na program bistveno razlikuje glede na začetno raven porabe, saj težki kupci ne spreminjajo vedenja, medtem ko lahki in zmerni kupci postopoma povečujejo pogostost nakupov in zvestobo (Liu, 2007). Ta heterogenost je ključna za načrtovanje kampanj, ker enaka spodbuda ne bo enako učinkovita pri vseh segmentih. Verhoef (2003) dodaja, da čustvena zavezanost deluje kot posrednik med zaznanimi koristmi in dejanskim vedenjem, zato promocijske kampanje ne smejo ciljati le na kratkoročne ekonomske spodbude, temveč morajo graditi tudi čustveno povezanost.
+
+
+2. Psihološki mehanizmi in vpliv dizajna programa na učinkovitost kampanj
+
+Učinkovitost promocijskih kampanj je odvisna od razumevanja treh sočasno delujočih psiholoških mehanizmov, in sicer statusa, navade in odnosa (Henderson, Beck & Palmatier, 2011). Kampanja, ki temelji na enem mehanizmu (npr. statusu), lahko pri enem segmentu spodbudi angažiranje, pri drugem pa povzroči negativne učinke (občutek nepravičnosti). Dorotic, Bijmolt in Verhoef (2011) izpostavljata mehanizma "pritisk točk" (kratkoročno pospeševanje nakupov pred nagrado) in "nagrajeno vedenje" (dolgoročna sprememba navad). Liu (2007) ugotavlja, da se največja sprememba vedenja zgodi v prvih treh mesecih po vključitvi, kar pomeni, da so začetne promocijske kampanje ključne za vzpostavitev novih nakupnih navad. Verhoef (2003) nadalje dokazuje, da neposredna pošta vpliva na rast deleža stranke, ne pa na zadrževanje, saj orodja, učinkovita za en cilj, niso nujno primerna za drugega.
+
+
+3. Ključni dejavniki za oceno efektivnosti promocijskih kampanj
+
+Pri analizi efektivnosti kampanj je treba upoštevati več kritičnih dejavnikov. Prvič, samoizbira, kkjer so stranke, ki se vključijo v program, pogosto že bolj zveste, zato primerjava med člani in nečlani precenjuje učinke; nujna je longitudinalna analiza iste skupine pred in po kampanji (Dorotic, Bijmolt & Verhoef, 2011; Verhoef, 2003). Drugič, konkurenčna nasičenost zmanjšuje učinkovitost, saj morajo kampanje iskati edinstvene vrednostne predloge, kot so ne-denarne koristi (prepoznava, ekskluzivni dogodki), ki jih konkurenca težko posnema (Mimouni-Chaabane & Volle, 2009). Tretjič je časovni okvir, ker kratkoročni učinki ne odražajo dolgoročne učinkovitosti, saj se trajne spremembe pri lahkih in zmernih kupcih pokažejo šele po več mesecih (Liu, 2007; Henderson, Beck & Palmatier, 2011). Nazadnje, preteklo vedenje pojasni večino variance (okoli 90 %), zato je treba realno oceniti pričakovane učinke, kjer je največji potencial za rast v segmentih lahkih in zmernih kupcev, ne v težkih, ki so že dosegli svoj maksimum (Verhoef, 2003).
+
+
 
 ## Učinkovitost 2018 promocije
 
