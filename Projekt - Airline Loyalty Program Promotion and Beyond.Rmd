@@ -3,6 +3,8 @@ title: "Projekt - Airline Loyalty Program Promotion and Beyond"
 author: "Manca Prošek, Tristan Dragan, Patricija Jaklič"
 date: "2026-08-14"
 output:
+  pdf_document:
+    latex_engine: xelatex
   html_document:
     df_print: paged
 ---
@@ -10,9 +12,10 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
+pdf.options(family = "ArialMT")
 ```
 
-```{r}
+```{r include=FALSE}
 set.seed(42)
 ```
 
@@ -299,6 +302,7 @@ podlagi literature in praks.
 
 Glavne dimenzije ocenjevanja kvalitete podatkov, ki jih bomo upoštevali pri naši
 analizi so:
+
 1.Natančnost ali točnost\
 2.Celovitost\
 3.Doslednost\
@@ -317,14 +321,17 @@ Primarni cilj zagotavljanja točnosti podatkov je prepoznavanje in odpravljanje
 napak v podatkovnih vrednostih, kot so napake pri prepisovanju, podvojeni vnosi 
 in napačne vrednosti.
 Točnost podatkov se dosega z uporabo: 
+
 – čiščenja podatkov za prepoznavanje in 
 odpravljanje napak ter neskladnosti v naborih podatkov, kot so odstranjevanje 
-podvojenih zapisov, popravljanje tipkarskih napak in standardizacija podatkov; 
+podvojenih zapisov, popravljanje tipkarskih napak in standardizacija podatkov\
+
 – preverjanja veljavnosti podatkov s pomočjo vnaprej določenih pravil ali 
 algoritmov za odkrivanje napak, neskladnosti in netočnosti v podatkih med 
-postopkom vnosa ali naknadno; 
+postopkom vnosa ali naknadno\
+
 – profiliranja podatkov za prepoznavanje vzorcev, trendov in nepravilnosti v 
-naborih podatkov, ki lahko kažejo na netočnosti ali neskladnosti."
+naborih podatkov, ki lahko kažejo na netočnosti ali neskladnosti.
 
 Za naše podatke nimamo zunanjih referenčnih virov s katerim bi lahko naredili 
 neposredno primerjavo podatkov za preverjanje točnosti podatkov, ker nimamo 
@@ -1141,3 +1148,8 @@ kable(seg_summary, digits = 2,
 Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi velikosti pa je komulativen prispevek 2. skupine največji `CLV` ($67.9$%), sledi 1. skupina ($21.9$%), na zadnjem mestu pa je 3. skupina ($10.2$%).
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
+
+```{r}
+
+```
+
