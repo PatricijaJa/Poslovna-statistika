@@ -1149,7 +1149,196 @@ Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi vel
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
 
+## Definiranje churn
+
+```{r}
+# Nova spremenljivka Churn - binarna
+
+Customer_Loyalty_History <- Customer_Loyalty_History %>%
+  mutate(
+    Churn = if_else(is.na(`Cancellation Year`), 0, 1) 
+    # Churn = 1 → stranka je zapustila članstvo
+    # Churn = 0 → članstva ni zapustila
+  )
+```
+
+Dodali smo novo spremenljivko `Churn`, ki je binarna, toraj zavzema vrednosti 0
+in 1. 1 pomeni da je stranka prekinila članstvo in 0 da članstva ni zapustila.
+
+V nadaljevanju smo pogledali podatke in ugotovili, da je članstvo zapustilo 2067 oseb, kar predstavlja 12% vseh kartičarjev.
+
+```{r}
+Customer_Loyalty_History %>%
+  count(Churn) %>%
+  mutate(
+    '%' = round(n / sum(n) * 100)
+  )
+```
+
+## Numerične spremenljivke
+
+```{r}
+Customer_Loyalty_History %>%
+  group_by(Churn) %>%
+  summarise(
+    n = n(),
+    `mean salary` = mean(Salary, na.rm = TRUE),
+    `median salary` = median(Salary, na.rm = TRUE),
+    `mean clv` = mean(CLV, na.rm = TRUE),
+    `median clv` = median(CLV, na.rm = TRUE)
+  )
+```
+
+Če gledamo odliv strank po plači in CLV ne opazimo velikih odstopanj. Deluje podobno.
+
+## Kategorične spremenljivke
+
+```{r}
+# Leto odhoda
+Customer_Loyalty_History %>%
+  group_by(`Cancellation Year`) %>%
+  summarise(
+    churned = n()
+  )
+
+# Mesec odhoda
+Customer_Loyalty_History %>%
+  group_by(`Cancellation Month`) %>%
+  summarise(
+    churned = n()
+  )
+```
+
+## Primerjava z vpisom
+
+```{r}
+###################################
+# LETO
+###################################
+
+enrollment <- Customer_Loyalty_History %>%
+  count(`Enrollment Year`) %>%
+  rename(
+    Year = `Enrollment Year`,
+    Enrollment = n
+  )
+
+cancellation <- Customer_Loyalty_History %>%
+  filter(!is.na(`Cancellation Year`)) %>%
+  count(`Cancellation Year`) %>%
+  rename(
+    Year = `Cancellation Year`,
+    Cancellation = n
+  )
+
+year_data <- full_join(enrollment, cancellation, by = "Year") %>%
+  mutate(
+    Enrollment = replace_na(Enrollment, 0),
+    Cancellation = replace_na(Cancellation, 0)
+  ) %>%
+  pivot_longer(
+    cols = c(Enrollment, Cancellation),
+    names_to = "Type",
+    values_to = "Number"
+  )
+
+ggplot(year_data, aes(x = factor(Year), y = Number, fill = Type)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Customer enrollment and cancellation by year",
+    x = "Year",
+    y = "Number of customers",
+    fill = "Type"
+  )
+
+###################################
+# MESEC
+###################################
+
+enrollment_month <- Customer_Loyalty_History %>%
+  count(`Enrollment Month`) %>%
+  rename(
+    Month = `Enrollment Month`,
+    Enrollment = n
+  )
+
+cancellation_month <- Customer_Loyalty_History %>%
+  filter(!is.na(`Cancellation Month`)) %>%
+  count(`Cancellation Month`) %>%
+  rename(
+    Month = `Cancellation Month`,
+    Cancellation = n
+  )
+
+month_data <- full_join(enrollment_month, cancellation_month, by = "Month") %>%
+  pivot_longer(
+    cols = c(Enrollment, Cancellation),
+    names_to = "Type",
+    values_to = "Number"
+  )
+
+ggplot(month_data, aes(x = factor(Month), y = Number, fill = Type)) +
+  geom_col(position = "dodge") +
+  labs(
+    title = "Customer enrollment and cancellation by month",
+    x = "Month",
+    y = "Number of customers",
+    fill = "Type"
+  )
+```
+
+```{r}
+kable(Customer_Loyalty_History %>%
+  filter(!is.na(`Cancellation Year`)) %>%
+  count(`Enrollment Year`, `Cancellation Year`))
+
+ggplot(
+  Customer_Loyalty_History %>%
+    filter(!is.na(`Cancellation Year`)),
+  aes(x = factor(`Enrollment Year`),
+      fill = factor(`Cancellation Year`))
+) +
+  geom_bar() +
+  labs(
+    title = "Churned customers by enrollment and cancellation year",
+    x = "Enrollment year",
+    y = "Number of churned customers",
+    fill = "Cancellation year"
+  )
+```
+
+Zgornji grafikon je zelo poveden, saj je možno opaziti vzorec, in sicer je vidno, da večina kartičarjev odide po 1 letu. Največ kartičarjev so izgubili v letu 2015.
+Pri kohorti 2017 je posebej izrazit churn v letu 2018.
+Leto 2018 (vpisa) pa je nekoliko problematično za neposredno primerjavo, saj ne vemo ali so osebe vpisane v članstvo odšle po 1 letu.
+
+## COHORT CHURN RATE
+
 ```{r}
 
 ```
 
+```{r}
+# Status kartičarja
+
+Customer_Loyalty_History %>%
+  group_by(`Loyalty Card`) %>%
+  summarise(
+    customers = n(),
+    churned = sum(Churn),
+    `churn rate` = mean(Churn) * 100
+  )
+```
+
+Pri stopnjah kartičarjev opazimo, da jih je največ odšlo iz skupine `Star` kar je tudi pričakovano, saj jih je tam največ ima pa najniżji `Churn rate`. Najvišji `Churn rate` opazimo pri skupini `Aurora`.
+
+Pri spremenljivki spol tudi ne opazimo velikih odstopanj.
+
+```{r}
+Customer_Loyalty_History %>%
+  group_by(Gender) %>%
+  summarise(
+    customers = n(),
+    churned = sum(Churn),
+    `churn rate` = mean(Churn) * 100
+  )
+```
