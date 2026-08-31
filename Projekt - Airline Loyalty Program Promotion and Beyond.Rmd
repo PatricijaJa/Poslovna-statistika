@@ -1400,3 +1400,13 @@ Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustij
 
 ## Logistična regresija
 
+Za napovedovanje potrebujemo agregirano podatkovno tabelo po kartičarjih. Predhodno smo že očistili oz. uredili podatkovni tabeli zato bomo sedaj združili.
+
+```{r}
+# Združitev obeh podatkovnih tabel
+
+merged <- Customer_Loyalty_History %>%
+  left_join(Customer_Flight_Activity_Clean, by = "Loyalty Number")
+
+```
+
