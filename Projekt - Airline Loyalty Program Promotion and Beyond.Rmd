@@ -1149,6 +1149,7 @@ Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi vel
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
 
+## Osnovni pregled spremenljivk
 ## Definiranje churn
 
 ```{r}
@@ -1287,6 +1288,9 @@ ggplot(month_data, aes(x = factor(Month), y = Number, fill = Type)) +
   )
 ```
 
+Iz zgornjega gradfikona vidimo, da se število oseb, ki prekličjo članstvo v kartici zvestobe z leti povečuje. 
+V nadaljevanju nas zanima koliko let oz ali so kakšne velike razlike v letih oz mesecih izstopa.
+
 ```{r}
 kable(Customer_Loyalty_History %>%
   filter(!is.na(`Cancellation Year`)) %>%
@@ -1311,11 +1315,30 @@ Zgornji grafikon je zelo poveden, saj je možno opaziti vzorec, in sicer je vidn
 Pri kohorti 2017 je posebej izrazit churn v letu 2018.
 Leto 2018 (vpisa) pa je nekoliko problematično za neposredno primerjavo, saj ne vemo ali so osebe vpisane v članstvo odšle po 1 letu.
 
-## COHORT CHURN RATE
+## COHORT CHURN RATE --- za naredit
 
 ```{r}
+kable(Customer_Loyalty_History %>%
+  filter(!is.na(`Cancellation Month`)) %>%
+  count(`Enrollment Month`, `Cancellation Month`))
 
+ggplot(
+  Customer_Loyalty_History %>%
+    filter(!is.na(`Cancellation Month`)),
+  aes(x = factor(`Enrollment Month`),
+      fill = factor(`Cancellation Month`))
+) +
+  geom_bar() +
+  labs(
+    title = "Churned customers by enrollment and cancellation month",
+    x = "Enrollment month",
+    y = "Number of churned customers",
+    fill = "Cancellation month"
+  )
 ```
+
+Glede na zanimive razultate pri preklicu kartice po letih, nas je zanimalo ali opazimo vzorec tudi po mesecih.
+Tudi ko gledalo preklic članstev po mesecih opazimo vzorec, in sicer če je mesec vpisa januar jih največ prekliče septembra. Torej po 8 mesecih, kar je opazen vzorec tudi pri vseh ostaih mesecih.
 
 ```{r}
 # Status kartičarja
@@ -1331,8 +1354,6 @@ Customer_Loyalty_History %>%
 
 Pri stopnjah kartičarjev opazimo, da jih je največ odšlo iz skupine `Star` kar je tudi pričakovano, saj jih je tam največ ima pa najniżji `Churn rate`. Najvišji `Churn rate` opazimo pri skupini `Aurora`.
 
-Pri spremenljivki spol tudi ne opazimo velikih odstopanj.
-
 ```{r}
 Customer_Loyalty_History %>%
   group_by(Gender) %>%
@@ -1342,3 +1363,40 @@ Customer_Loyalty_History %>%
     `churn rate` = mean(Churn) * 100
   )
 ```
+
+Pri spremenljivki spol ne opazimo velikih odstopanj.
+
+## Napovedovanje odliva strank
+
+Po pregledu literature najpogosteje omenjajo da so pomembni trije sklopi, in sicer:
+1. Demografske značilnosti - v našem primeru `Gender`, `Education`, `Marital Status`, `Province`
+2. Uporabniške oz vedenjske značilnosti - našem primeru `Flights Booked`, `Total Flights`, `Distance`
+3. Finančne oz. vrednostne značilnosti. - našem primeru `CLV`, `Salary`
+
+Literatura tudi poudarja, da za napovedovanje, ne smemo uporabiti informacij, ki so nastale po odhodu. Napaka, ki jo bi z uporabo informacij po odhodu dobili se  imenuje *angl. data leakage*.
+Zato je potrbno definirati *angl. prediction point*.
+
+### Čas odhoda v mesecih
+```{r}
+Customer_Loyalty_History <- Customer_Loyalty_History %>%
+  mutate(
+    `tenure months` = (`Cancellation Year` - `Enrollment Year`) * 12 +
+                    (`Cancellation Month` - `Enrollment Month`)
+  )
+```
+
+```{r}
+Customer_Loyalty_History %>%
+  filter(!is.na(tenure_months)) %>%
+  summarise(
+    mean = mean(tenure_months),
+    median = median(tenure_months),
+    min = min(tenure_months),
+    max = max(tenure_months)
+  )
+```
+
+Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustijo v 16 mesecih, medijana se nahaja znotraj 8 mesecev. Maksimalno pa je kartičar ostal 71 mesecev. Dobro se zavedati da so to samo okvirne vrednosti glede na podatke in s tem leti s katerimi razpolagamo.
+
+## Logistična regresija
+
