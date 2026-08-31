@@ -1377,6 +1377,7 @@ Literatura tudi poudarja, da za napovedovanje, ne smemo uporabiti informacij, ki
 Zato je potrbno definirati *angl. prediction point*.
 
 ### Čas odhoda v mesecih
+
 ```{r}
 Customer_Loyalty_History <- Customer_Loyalty_History %>%
   mutate(
