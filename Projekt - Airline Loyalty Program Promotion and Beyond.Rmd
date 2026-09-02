@@ -1147,7 +1147,8 @@ kable(seg_summary, digits = 2,
 
 Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi velikosti pa je komulativen prispevek 2. skupine največji `CLV` ($67.9$%), sledi 1. skupina ($21.9$%), na zadnjem mestu pa je 3. skupina ($10.2$%).
 
-# (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje možnih ukrepov za njihovo zadržanje
+# (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje ----
+# možnih ukrepov za njihovo zadržanje
 
 ## Osnovni pregled spremenljivk
 ## Definiranje churn
@@ -1166,20 +1167,21 @@ Customer_Loyalty_History <- Customer_Loyalty_History %>%
 Dodali smo novo spremenljivko `Churn`, ki je binarna, toraj zavzema vrednosti 0
 in 1. 1 pomeni da je stranka prekinila članstvo in 0 da članstva ni zapustila.
 
-V nadaljevanju smo pogledali podatke in ugotovili, da je članstvo zapustilo 2067 oseb, kar predstavlja 12% vseh kartičarjev.
+V nadaljevanju smo pogledali podatke in ugotovili, da je članstvo zapustilo
+2067 oseb, kar predstavlja 12% vseh kartičarjev.
 
 ```{r}
-Customer_Loyalty_History %>%
+kable(Customer_Loyalty_History %>%
   count(Churn) %>%
   mutate(
     '%' = round(n / sum(n) * 100)
-  )
+  ))
 ```
 
 ## Numerične spremenljivke
 
 ```{r}
-Customer_Loyalty_History %>%
+kable(Customer_Loyalty_History %>%
   group_by(Churn) %>%
   summarise(
     n = n(),
@@ -1187,30 +1189,12 @@ Customer_Loyalty_History %>%
     `median salary` = median(Salary, na.rm = TRUE),
     `mean clv` = mean(CLV, na.rm = TRUE),
     `median clv` = median(CLV, na.rm = TRUE)
-  )
+  ))
 ```
 
-Če gledamo odliv strank po plači in CLV ne opazimo velikih odstopanj. Deluje podobno.
+Če gledamo odliv strank po plači in CLV ne opazimo velikih odstopanj. 
 
 ## Kategorične spremenljivke
-
-```{r}
-# Leto odhoda
-Customer_Loyalty_History %>%
-  group_by(`Cancellation Year`) %>%
-  summarise(
-    churned = n()
-  )
-
-# Mesec odhoda
-Customer_Loyalty_History %>%
-  group_by(`Cancellation Month`) %>%
-  summarise(
-    churned = n()
-  )
-```
-
-## Primerjava z vpisom
 
 ```{r}
 ###################################
@@ -1288,14 +1272,12 @@ ggplot(month_data, aes(x = factor(Month), y = Number, fill = Type)) +
   )
 ```
 
-Iz zgornjega gradfikona vidimo, da se število oseb, ki prekličjo članstvo v kartici zvestobe z leti povečuje. 
-V nadaljevanju nas zanima koliko let oz ali so kakšne velike razlike v letih oz mesecih izstopa.
+Iz zgornjega gradfikona vidimo, da se število oseb, ki prekličjo članstvo v 
+kartici zvestobe z leti povečuje. 
+V nadaljevanju nas zanima koliko let in ali so kakšne velike razlike v letih oz.
+mesecih izstopa iz članstva.
 
 ```{r}
-kable(Customer_Loyalty_History %>%
-  filter(!is.na(`Cancellation Year`)) %>%
-  count(`Enrollment Year`, `Cancellation Year`))
-
 ggplot(
   Customer_Loyalty_History %>%
     filter(!is.na(`Cancellation Year`)),
@@ -1311,17 +1293,16 @@ ggplot(
   )
 ```
 
-Zgornji grafikon je zelo poveden, saj je možno opaziti vzorec, in sicer je vidno, da večina kartičarjev odide po 1 letu. Največ kartičarjev so izgubili v letu 2015.
+Zgornji grafikon je zelo poveden, saj je možno opaziti vzorec, in sicer je vidno,
+da večina kartičarjev odide po 1 letu. Največ kartičarjev so izgubili v letu
+2015.
 Pri kohorti 2017 je posebej izrazit churn v letu 2018.
-Leto 2018 (vpisa) pa je nekoliko problematično za neposredno primerjavo, saj ne vemo ali so osebe vpisane v članstvo odšle po 1 letu.
+Leto 2018 (vpisa) pa je nekoliko problematično za neposredno primerjavo, saj ne
+vemo ali so osebe vpisane v članstvo odšle po 1 letu.
 
 ## COHORT CHURN RATE --- za naredit
 
 ```{r}
-kable(Customer_Loyalty_History %>%
-  filter(!is.na(`Cancellation Month`)) %>%
-  count(`Enrollment Month`, `Cancellation Month`))
-
 ggplot(
   Customer_Loyalty_History %>%
     filter(!is.na(`Cancellation Month`)),
@@ -1337,8 +1318,11 @@ ggplot(
   )
 ```
 
-Glede na zanimive razultate pri preklicu kartice po letih, nas je zanimalo ali opazimo vzorec tudi po mesecih.
-Tudi ko gledalo preklic članstev po mesecih opazimo vzorec, in sicer če je mesec vpisa januar jih največ prekliče septembra. Torej po 8 mesecih, kar je opazen vzorec tudi pri vseh ostaih mesecih.
+Glede na zanimive razultate pri preklicu kartice po letih, nas je zanimalo ali
+opazimo vzorec tudi po mesecih.
+Tudi ko gledalo preklic članstev po mesecih opazimo vzorec, in sicer če je mesec
+vpisa januar jih največ prekliče septembra. Torej po 8 mesecih, kar je opazen 
+vzorec tudi pri vseh ostaih mesecih.
 
 ```{r}
 # Status kartičarja
@@ -1352,7 +1336,9 @@ Customer_Loyalty_History %>%
   )
 ```
 
-Pri stopnjah kartičarjev opazimo, da jih je največ odšlo iz skupine `Star` kar je tudi pričakovano, saj jih je tam največ ima pa najniżji `Churn rate`. Najvišji `Churn rate` opazimo pri skupini `Aurora`.
+Pri stopnjah kartičarjev opazimo, da jih je največ odšlo iz skupine `Star` kar
+je tudi pričakovano, saj jih je tam največ ima pa najniżji `Churn rate`.
+Najvišji `Churn rate` opazimo pri skupini `Aurora`.
 
 ```{r}
 Customer_Loyalty_History %>%
@@ -1368,12 +1354,18 @@ Pri spremenljivki spol ne opazimo velikih odstopanj.
 
 ## Napovedovanje odliva strank
 
-Po pregledu literature najpogosteje omenjajo da so pomembni trije sklopi, in sicer:
-1. Demografske značilnosti - v našem primeru `Gender`, `Education`, `Marital Status`, `Province`
-2. Uporabniške oz vedenjske značilnosti - našem primeru `Flights Booked`, `Total Flights`, `Distance`
-3. Finančne oz. vrednostne značilnosti. - našem primeru `CLV`, `Salary`
+Po pregledu literature najpogosteje omenjajo da so pomembni trije sklopi,
+in sicer:\
+1. Demografske značilnosti - v našem primeru:
+`Gender`, `Education`, `Marital Status`, `Province`
+2. Uporabniške oz vedenjske značilnosti - našem primeru:
+`Flights Booked`, `Total Flights`, `Distance`
+3. Finančne oz. vrednostne značilnosti. - našem primeru:
+`CLV`, `Salary`
 
-Literatura tudi poudarja, da za napovedovanje, ne smemo uporabiti informacij, ki so nastale po odhodu. Napaka, ki jo bi z uporabo informacij po odhodu dobili se  imenuje *angl. data leakage*.
+Literatura tudi poudarja, da za napovedovanje, ne smemo uporabiti informacij,
+ki so nastale po odhodu. Napaka, ki jo bi z uporabo informacij po odhodu dobili
+se  imenuje *angl. data leakage*.
 Zato je potrbno definirati *angl. prediction point*.
 
 ### Čas odhoda v mesecih
@@ -1386,6 +1378,10 @@ Customer_Loyalty_History <- Customer_Loyalty_History %>%
   )
 ```
 
+V podatkovno tabelo smo dodali novo spremenljivko `tenture months`, ki ponazarja
+kolikšna je razlika v mesecih med odhodom iz članstva in mesecih vstopa v
+članstvo.
+
 ```{r}
 Customer_Loyalty_History %>%
   filter(!is.na(tenure_months)) %>%
@@ -1397,11 +1393,15 @@ Customer_Loyalty_History %>%
   )
 ```
 
-Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustijo v 16 mesecih, medijana se nahaja znotraj 8 mesecev. Maksimalno pa je kartičar ostal 71 mesecev. Dobro se zavedati da so to samo okvirne vrednosti glede na podatke in s tem leti s katerimi razpolagamo.
+Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustijo
+v 16 mesecih, medijana se nahaja znotraj 8 mesecev. Maksimalno pa je kartičar
+ostal 71 mesecev. Dobro se zavedati, da so to samo okvirne vrednosti glede na
+podatke in s tem leti s katerimi razpolagamo.
 
 ## Dodaten pregled podatkov
 
-Za napovedovanje potrebujemo agregirano podatkovno tabelo po kartičarjih. Predhodno smo že očistili oz. uredili podatkovni tabeli zato bomo sedaj združili.
+Za napovedovanje potrebujemo agregirano podatkovno tabelo po kartičarjih. 
+Predhodno smo že očistili oz. uredili podatkovni tabeli zato bomo sedaj združili.
 
 ```{r}
 # Združitev obeh podatkovnih tabel
@@ -1411,7 +1411,9 @@ merged <- Customer_Loyalty_History %>%
 
 ```
 
-Dobili smo tabelo "merged", ki je longitudinalna tabela torej 1 kartičar x več mesecev. Za napovedovanje pa želimo, da posamezna vrstica predstavlja posameznega karičarja.
+Dobili smo tabelo "merged", ki je longitudinalna tabela torej 1 kartičar x več
+mesecev. Za napovedovanje pa želimo, da posamezna vrstica predstavlja 
+posameznega karičarja.
 
 ```{r eval=FALSE, include=FALSE}
 # Samo osnovni pregled podatkov
@@ -1442,10 +1444,15 @@ merged %>%
      t()
 ```
 
-Stranka z `Loyalty Number` = 736504 se je včlanila v program zvestobe septembra 2012, vendar v podatkovni bazi Customer Flight Activity zanjo ni zabeležena nobena letalska aktivnost ali da bi izstopil iz programa zvestobe. Zdi se, da manjkajoče vrednosti odražajo odsotnost zabeležene dejavnosti in ne napačno vrednost.
+Opazili smo, da je stranka z `Loyalty Number` = 736504 se včlanila v program 
+zvestobe septembra 2012, vendar v podatkovni bazi Customer Flight Activity 
+zanjo ni zabeležena nobena letalska aktivnost ali da bi izstopil iz programa 
+zvestobe. Zdi se, da manjkajoče vrednosti odražajo odsotnost zabeležene 
+dejavnosti in ne napačno vrednost.
 
-Pred modeliranjem odliva strank je potrebno definirati tako imenovani **angl. prediction point**. \
-Pogledali bomo kdaj se churn dejansko zgodi glede na mesečno aktivnost.
+Pred modeliranjem odliva strank je potrebno definirati tako imenovani 
+**angl. prediction point**. \
+Pogledali bomo kdaj se odliv dejansko zgodi glede na mesečno aktivnost.
 
 ```{r}
 merged %>%
@@ -1459,7 +1466,8 @@ merged %>%
   head()
 ```
 
-Najprej preverimo, ali je pri churniranih strankah aktivnost prisotna po datumu *cancellation*.
+Najprej preverimo, ali je pri churniranih strankah aktivnost prisotna po 
+datumu *cancellation*.
 
 ```{r echo=FALSE}
 merged %>%
@@ -1473,7 +1481,10 @@ merged %>%
   summarise(n = n())
 ```
 
-Imamo 33.988 zapisov aktivnosti po *cancellation* datumu. To pomeni, da `Cancellation Year`/`Month` in mesečna aktivnost očitno nista neposredno usklajena oziroma `Cancellation` ne pomeni nujno, da se aktivnost po tem datumu konča.
+Imamo 33.988 zapisov aktivnosti po *cancellation* datumu. To pomeni, da 
+`Cancellation Year`/`Month` in mesečna aktivnost očitno nista neposredno 
+usklajena oziroma `Cancellation` ne pomeni nujno, da se aktivnost po tem datumu 
+konča.
 
 ```{r}
 merged %>%
