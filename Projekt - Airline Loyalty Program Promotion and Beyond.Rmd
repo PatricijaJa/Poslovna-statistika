@@ -1411,3 +1411,35 @@ merged <- Customer_Loyalty_History %>%
 
 ```
 
+Dobili smo tabelo "merged", ki je longitudinalna tabela torej 1 kartičar x več mesecev. Za napovedovanje pa želimo, da posamezna vrstica predstavlja posameznega karičarja.
+
+```{r eval=FALSE, include=FALSE}
+# Samo osnovni pregled podatkov
+
+dim(merged)
+
+names(merged)
+
+merged %>%
+  count(`Loyalty Number`) %>%
+  summarise(
+    min_records = min(n),
+    median_records = median(n),
+    mean_records = mean(n),
+    max_records = max(n)
+  )
+
+merged %>%
+  count(`Loyalty Number`, Year, Month) %>%
+  filter(n > 1)
+
+ merged %>%
+    filter(is.na(Year)) %>%
+   select(`Loyalty Number`, Year, Month, date)
+ 
+ merged %>%
+     filter(`Loyalty Number` == 736504) %>%
+     t()
+```
+
+Stranka z `Loyalty Number` = 736504 se je včlanila v loyalty program, vendar v Customer Flight Activity zanjo ni zabeležena nobena letalska aktivnost.
