@@ -1500,4 +1500,26 @@ merged %>%
   distinct(`Loyalty Number`, Churn, `Cancellation Year`, `Cancellation Month`) %>%
   count(Churn)
 ```
+-----------------
+Za nadaljno analizo odstranimo vse podatke od preklica naprej,
+saj za napovedovanje odhoda strank po priporočilih literature ni dobro
+vzemarti podatke po preklicu, saj nastane napaka *data leakage*.
+
+```{r}
+
+merged_clean <- merged %>%
+  # 1. korak: Sestavimo dejanski datum aktivnosti (vzamemo 1. dan v mesecu)
+  mutate(Activity_Date = make_date(`Year`, `Month`, 1)) %>%
+  
+  # 2. korak: Sestavimo datum preklica 
+  mutate(Cancellation_Date = make_date(`Cancellation Year`, `Cancellation Month`, 1)) %>%
+  
+  # 3. korak: Obdržimo samo aktivnosti PRED ali NA datum preklica, 
+  # ter seveda vse tiste stranke, ki sploh nimajo datuma preklica (so še aktivne)
+  filter(is.na(Cancellation_Date) | Activity_Date <= Cancellation_Date)
+
+# Preverimo, koliko vrstic smo dejansko odstranili
+nrow(merged) - nrow(merged_clean)
+```
+
 
