@@ -1399,7 +1399,7 @@ Customer_Loyalty_History %>%
 
 Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustijo v 16 mesecih, medijana se nahaja znotraj 8 mesecev. Maksimalno pa je kartičar ostal 71 mesecev. Dobro se zavedati da so to samo okvirne vrednosti glede na podatke in s tem leti s katerimi razpolagamo.
 
-## Logistična regresija
+## Dodaten pregled podatkov
 
 Za napovedovanje potrebujemo agregirano podatkovno tabelo po kartičarjih. Predhodno smo že očistili oz. uredili podatkovni tabeli zato bomo sedaj združili.
 
@@ -1442,4 +1442,51 @@ merged %>%
      t()
 ```
 
-Stranka z `Loyalty Number` = 736504 se je včlanila v loyalty program, vendar v Customer Flight Activity zanjo ni zabeležena nobena letalska aktivnost.
+Stranka z `Loyalty Number` = 736504 se je včlanila v program zvestobe septembra 2012, vendar v podatkovni bazi Customer Flight Activity zanjo ni zabeležena nobena letalska aktivnost ali da bi izstopil iz programa zvestobe. Zdi se, da manjkajoče vrednosti odražajo odsotnost zabeležene dejavnosti in ne napačno vrednost.
+
+Pred modeliranjem odliva strank je potrebno definirati tako imenovani **angl. prediction point**. \
+Pogledali bomo kdaj se churn dejansko zgodi glede na mesečno aktivnost.
+
+```{r}
+merged %>%
+  filter(Churn == 1) %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    `last activity` = max(date, na.rm = TRUE),
+    `cancellation year` = first(`Cancellation Year`),
+    `cancellation month` = first(`Cancellation Month`)
+  ) %>%
+  head()
+```
+
+Najprej preverimo, ali je pri churniranih strankah aktivnost prisotna po datumu *cancellation*.
+
+```{r echo=FALSE}
+merged %>%
+  filter(
+    Churn == 1,
+    !is.na(`Cancellation Year`),
+    !is.na(`Cancellation Month`),
+    (Year > `Cancellation Year`) |
+    (Year == `Cancellation Year` & Month > `Cancellation Month`)
+  ) %>%
+  summarise(n = n())
+```
+
+Imamo 33.988 zapisov aktivnosti po *cancellation* datumu. To pomeni, da `Cancellation Year`/`Month` in mesečna aktivnost očitno nista neposredno usklajena oziroma `Cancellation` ne pomeni nujno, da se aktivnost po tem datumu konča.
+
+```{r}
+merged %>%
+  group_by(Churn) %>%
+  summarise(
+    customers = n_distinct(`Loyalty Number`),
+    rows = n()
+  )
+```
+
+```{r}
+merged %>%
+  distinct(`Loyalty Number`, Churn, `Cancellation Year`, `Cancellation Month`) %>%
+  count(Churn)
+```
+
