@@ -36,6 +36,10 @@ library(missForest)
 library(missRanger)
 library(factoextra)
 library(dplyr)
+library(FSA)
+library(randomForest)
+library(corrplot)
+library(cluster)
 ```
 
 # Eksploratorna podatkovna analiza 
@@ -818,29 +822,105 @@ df %>%
 ```
 
 
+# (Tristan)  Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
 
+## Osnovno oblikovanje segmentov glede na kvartile in priprava podatkov za analizo skupin
 
+Cilj je, da razdelimo stranke v segmente in ugotovimo kateri so tisti z visoko vrednostjo atributa `CLV` (Customer lifetime value), ki to direktno meri. Zato najprej poglejmo to netransformirano (logaritmirano) spremenljivko in njeno porazdelitev. 
 
-# (Tristan) Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
+```{r}
+clv_quantiles <- quantile(
+  Customer_Loyalty_History$CLV,
+  probs = c(0.25, 0.50, 0.75),
+  na.rm = TRUE
+)
 
-Cilj je, da identificiramo stranke v segmente in ugotovimo kateri so tisti z visoko vrednostjo. Ker bomo uporabili za odkrivanje skupin v podatkovnem okvirju algoritem *k najbližjih sosedov (k-means)* moramo nujno spremenljivko `Salary` modelirati, saj boodo sicer NA vrednosti izključene iz algoritma. Za imputacijo bomo zaradi visokega deleža manjkajočih vrednosti in odvisnosti mankajoče vrednosti od opazovane spremenljivke same (samo nekateri izmed tistih z izobrazbo *College* ima mankajoče vrednosti) je potrebno uporabiti kompleksnejši multivariatni imputacijski algoritem. V tem primeru se odločimo za *missRanger*, ki deluje na principu naključnih gozdov. 
+# črte - vsaka vrstica bo ena črta
+lines_data <- data.frame(
+  xintercept = clv_quantiles,
+  quartile   = names(clv_quantiles) 
+)
+
+ggplot(Customer_Loyalty_History, aes(x = CLV)) +
+  geom_histogram(bins = 30, fill = "grey70", color = "black") +
+  geom_vline(
+    data = lines_data,
+    aes(xintercept = xintercept, color = quartile),
+    linetype = "dashed",
+    linewidth = 0.8
+  ) +
+  # Q1, Q2, Q3 na vrhu
+  annotate(
+    "text",
+    x = clv_quantiles,
+    y = Inf,
+    label = c("Q1", "Q2", "Q3"),
+    vjust = 2,
+    size = 4
+  ) +
+  scale_color_manual(
+    name = "Kvartil",
+    values = c("25%" = "red", "50%" = "blue", "75%" = "green"),
+    labels = c("Q1", "Q2", "Q3")
+  ) +
+  labs(
+    title = "Porazdelitev CLV s kvartili",
+    x = "CLV",
+    y = "Frekvenca"
+  ) +
+  theme_minimal()
+```
+Porazdeltiev `CLV` je močno asimetrična v desno, kar je razumljivo, namreč iz teorije vemo, da je delež tistih uporabnikov, ki prispevajo največjo vrednost, v resnici majhen (Paretov princip 20% ljudi prispeva 80% vrednosti). 
+
+```{r}
+simple_CLV_analysis_df <- Customer_Loyalty_History %>%
+  mutate(
+    clv_quartile = case_when(
+      CLV <= quantile(CLV, 0.25, na.rm = TRUE) ~ "Q1 (Najnižji)",
+      CLV <= quantile(CLV, 0.50, na.rm = TRUE) ~ "Q2 (Nizko-srednji)",
+      CLV <= quantile(CLV, 0.75, na.rm = TRUE) ~ "Q3 (Srednje-visoki)",
+      TRUE ~ "Q4 (Najvišji)"
+    ),
+    # fakotrji (vrstni red)
+    clv_quartile = factor(clv_quartile, 
+                          levels = c("Q1 (Najnižji)", "Q2 (Nizko-srednji)", 
+                                     "Q3 (Srednje-visoki)", "Q4 (Najvišji)"))
+  )
+
+# velikosti skupin
+table(simple_CLV_analysis_df$clv_quartile) %>%
+  knitr::kable(col.names = c("Kvartilna skupina glede na CLV ", "Število članov"))
+```
+Glede na kvartile smo oblikovali 4, skoraj enako velike, skupine strank glede na njihov `CLV` (*Najnižji, Nizko-srednji, Srednje-visoki, najvišji* ). Cilj je ugotoviti ali se tako oblikovane skupine, razlikujejo med seboj po ostalih atributih. Zato, ker bomo uporabili MANOVA analizo, ki predpostavlja normalnost uporabimo logaritmirane vrednosti asimetrično porazdeljenih atributov in ugotoviti kaj storiti z manjkajočimi vrednostmi.
+
+```{r}
+kable(simple_CLV_analysis_df%>%
+  group_by(clv_quartile) %>%
+  summarise(mean_CLV = mean(CLV, na.rm = TRUE)))
+```
+Skupine se razlikujejo tudi po povprečni vrednosti `CLV` kot vidimo zgoraj v tabeli, vrednosti iz nižje v višjo skupino konsistentno naraščajo.
+
+Spremenljivka, ki ima velik delež mankajočih vrednosti ($25.44$%) je `Salary`. Te vrednosti bi bilo smiselno imputirati. To je v statistiki postopek nadomeščanja manjkajočih podatkov z ocenjenimi ali izračunanimi vrednostmi.
+
+Za imputacijo `Salary` bomo zaradi visokega deleža manjkajočih vrednosti in odvisnosti mankajoče vrednosti od opazovane spremenljivke same (samo nekateri izmed tistih z izobrazbo *College* ima manjkajoče vrednosti) uporabili kompleksnejši multivariatni imputacijski algoritem. V tem primeru se odločimo za *missRanger*, ki deluje na principu naključnih gozdov, kjer s pomočjo ostalih (znanih) vrednosti spremenljivke in pomožnih spremenljivk modelira ter nadomesti te manjkajoče vrednosti. Uporabili bomo $1000$ gozdov in $100$ iteracij.
+
+Uvedemo tudi dve novi spremenljivki `Salary_Missing` (če je manjkal podatek o plači) in `churned` (ali je član še aktiven). Ti nama bosta pomagali pri kompleksnejšem oblikovanju skupin v nadaljevanju.
 
 ```{r}
 # dodamo indikator manjkajoče plače in odliva
-Customer_Loyalty_History_Log <- Customer_Loyalty_History_Log %>%
+Customer_Loyalty_History_miss <- Customer_Loyalty_History %>%
   mutate(
     Salary_Missing = if_else(is.na(Salary), 1, 0),
-    churned = if_else(is.na(`Cancellation Year`), 0, 1)   # 1 = zapustil, 0 = aktiven
+    churned = if_else(is.na(`Cancellation Year`), 0, 1)
   )
-
 # izključimo izvirna datuma, vključimo pa churned
 impute_exclude <- c("Postal Code", 
                     "Enrollment Year", "Enrollment Month", 
                     "Cancellation Year", "Cancellation Month")
 
-# pripravimo podatke za imputacijo – obdržimo Loyalty Number, Loyalty Card, churned, ...
-impute_data <- Customer_Loyalty_History_Log %>%
-  select(-any_of(impute_exclude)) %>%   # pika je bila odveč – zdaj je prav
+# pripravimo podatke za imp
+impute_data <- Customer_Loyalty_History_miss %>%
+  select(-any_of(impute_exclude)) %>%   
   mutate(across(where(is.character), as.factor))
 
 # odstranimo konstantne stolpce (npr. Country)
@@ -860,292 +940,630 @@ Customer_Loyalty_History_Imputed <- missRanger(
   maxiter = 100
 )
 
-# sum(is.na(Customer_Loyalty_History_Imputed$Salary))  # mora biti 0
-```
+# finalni podatkovni okvir
+final_df <- Customer_Loyalty_History
 
-Zdaj uporabimo agregirane vrednosti in naredimo nov združen data frame. Kot smo videli prej je smiselno zaradi *k-means* algrotima logaritmirat agregirane vrednosti in jih skalirati (standardizirati). 
-
-```{r}
-loyalty_imputed <- Customer_Loyalty_History_Imputed %>%
-  select(`Loyalty Number`, Salary, CLV, Education, `Marital Status`, 
-         Gender, `Loyalty Card`, `Enrollment Type`, Salary_Missing, churned)
-
-# log
-activity_log <- Customer_Activity %>%
+# Dodamo kvartilno skupino CLV
+final_df <- final_df %>%
   mutate(
-    log_total_flights    = log1p(total_flights_sum),
-    log_total_distance   = log1p(total_distance),
-    log_points_accum     = log1p(points_accumulated),
-    log_points_redeemed  = log1p(points_redeemed),
-    log_dollar_redeemed  = log1p(dollar_cost_redeemed),
-    log_avg_flights      = log1p(avg_flights_per_month)
+    clv_quartile = case_when(
+      CLV <= quantile(CLV, 0.25, na.rm = TRUE) ~ "Q1 (Najnižji)",
+      CLV <= quantile(CLV, 0.50, na.rm = TRUE) ~ "Q2 (Nizko-srednji)",
+      CLV <= quantile(CLV, 0.75, na.rm = TRUE) ~ "Q3 (Srednje-visoki)",
+      TRUE ~ "Q4 (Najvišji)"
+    ),
+    clv_quartile = factor(clv_quartile, 
+                          levels = c("Q1 (Najnižji)", "Q2 (Nizko-srednji)", 
+                                     "Q3 (Srednje-visoki)", "Q4 (Najvišji)"))
+  )
+
+# Dodamo imputirano plačo (zamenjamo staro)
+Customer_Loyalty_History_Imputed$`Loyalty Number` <- 
+  as.character(Customer_Loyalty_History_Imputed$`Loyalty Number`)
+final_df$`Loyalty Number` <- as.character(final_df$`Loyalty Number`)
+
+final_df <- final_df %>%
+  select(-Salary) %>%   # odstranimo staro Salary z NA
+  left_join(
+    Customer_Loyalty_History_Imputed %>% select(`Loyalty Number`, Salary),
+    by = "Loyalty Number"
+  )
+
+# Dodamo indikatorja churned in Salary_Missing
+Customer_Loyalty_History_miss$`Loyalty Number` <- 
+  as.character(Customer_Loyalty_History_miss$`Loyalty Number`)
+
+final_df <- final_df %>%
+  left_join(
+    Customer_Loyalty_History_miss %>% 
+      select(`Loyalty Number`, churned, Salary_Missing),
+    by = "Loyalty Number"
+  )
+
+# gregiramo aktivnosti
+Customer_Activity_Ag <- Customer_Flight_Activity %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    total_flights_sum       = sum(`Total Flights`, na.rm = TRUE),
+    total_distance          = sum(Distance, na.rm = TRUE),
+    points_accumulated      = sum(`Points Accumulated`, na.rm = TRUE),
+    points_redeemed         = sum(`Points Redeemed`, na.rm = TRUE),
+    dollar_cost_redeemed    = sum(`Dollar Cost Points Redeemed`, na.rm = TRUE),
+    active_months           = n_distinct(interaction(Year, Month, drop = TRUE)),
+    latest_year_month       = max(Year * 12 + Month, na.rm = TRUE),
+    .groups = "drop"
   ) %>%
-  select(`Loyalty Number`, starts_with("log_"), active_months, redemption_rate)
+  mutate(
+    months_since_last_flight = max(latest_year_month, na.rm = TRUE) - latest_year_month,
+    avg_flights_per_month   = total_flights_sum / active_months,
+    avg_distance_per_month  = total_distance / active_months,
+    avg_points_accum_per_month = points_accumulated / active_months,
+    avg_points_redeemed_per_month = points_redeemed / active_months,
+    avg_dollar_redeemed_per_month = dollar_cost_redeemed / active_months,
+    has_flights          = as.integer(total_flights_sum > 0),
+    has_distance         = as.integer(total_distance > 0),
+    has_points_accum     = as.integer(points_accumulated > 0),
+    has_points_redeemed  = as.integer(points_redeemed > 0),
+    has_dollar_redeemed  = as.integer(dollar_cost_redeemed > 0),
+    redemption_rate      = if_else(points_accumulated > 0, 
+                                    points_redeemed / points_accumulated, 0),
+    avg_distance_per_flight = if_else(total_flights_sum > 0,
+                                      total_distance / total_flights_sum, 0)
+  ) %>%
+  select(-latest_year_month)
 
-# združeno za analizo
-final_df <- loyalty_imputed %>%
-  left_join(activity_log, by = "Loyalty Number")
-
-# preveri
-kable(summary(final_df))
-# sum(is.na(final_df$Salary))   # mora biti 0
-```
-
-```{r}
-set.seed(42)
-# spremenljivke za segmentacijo
-clust_vars <- c("log_total_flights", "log_total_distance", 
-                "log_points_accum", "log_points_redeemed",
-                "log_dollar_redeemed", "active_months", 
-                "redemption_rate", "Salary", "CLV")
-
-# pripravimo podatke za k-means 
-train_kmeans <- final_df %>%
-  select(all_of(clust_vars)) %>%
-  drop_na()   # varnostno, če bi kje ostal NA
-
-# skaliranje 
-train_kmeans_scaled <- scale(train_kmeans)
-
-# elbow
-wss <- sapply(2:6, function(k) {
-  kmeans(train_kmeans_scaled, centers = k, nstart = 25)$tot.withinss
-})
-
-plot(2:6, wss, type = "b", 
-     xlab = "Število skupin k", 
-     ylab = "Within-cluster sum of squares",
-     main = "Elbow plot")
-```
-Pri odločitvi za števila skupin si pomagamo z grafom, kjer iščemo optimalno število skupin ("koleno"). Odločimo se za 3 skupine. 
-
-```{r}
-set.seed(42)
-# izberemo k = 3 
-k_optimal <- 3
-km_final <- kmeans(train_kmeans_scaled, centers = k_optimal, nstart = 25)
-
-barve_skupin <- c("#E41A1C", "#377EB8", "#4DAF4A")
-
-# viz
-fviz_cluster(km_final, data = train_kmeans_scaled,
-             geom = "point",
-             ellipse.type = "convex",
-             palette = barve_skupin,
-             ggtheme = theme_minimal()) +
-  labs(title = paste0("K-means segmentacija (k = ", k_optimal, ")")) +
-  scale_color_manual(values = barve_skupin)   # enotne barve
-
-# toplotna karta centrov (interpretacija skupin)
-as.data.frame(km_final$centers) %>%
-  mutate(skupina = factor(row_number())) %>%
-  pivot_longer(-skupina, names_to = "spremenljivka", values_to = "vrednost") %>%
-  ggplot(aes(x = spremenljivka, y = skupina, fill = vrednost)) +
-  geom_tile() +
-  scale_fill_gradient2(low = "steelblue", mid = "white", high = "firebrick",
-                       midpoint = 0) +
-  labs(x = NULL, y = "Skupina", fill = "Standardizirana\nvrednost") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-Če pogledamo skupine osnovane na standardiziranih vrednostih dobimo tri skupine. 
-
-Skupina 1 to povprečno aktivni uporabniki. Za njih je značilno: zelo malo unovčenih dolarjev in točk, podpovprečna razdalja, število letov približno povprečno.
-
-Skupina 2 to so nadpovprečno aktivni uporabniki. Za njih je značilno: nekoliko nadpovprečno unovčevanje dolarjev in točk, ostala aktivnost blizu povprečja.
-
-Skupina 3 so podpovprečno redki/priložnostni leteči potniki. Za njih je značilno: zelo malo unovčenih dolarjev in točk, zelo malo zbranih točk, letijo precej manj in imajo nizko stopnjo unovčevanja.
-
-Spremenljivke active_months, CLV in Salary med skupinami ne kažejo velikih razlik, zato niso ključne za razlikovanje segmentov.
-
-```{r}
-set.seed(42)
-# spremenljivke za segmentacijo (iste kot prej) ---
-clust_vars <- c("log_total_flights", "log_total_distance", 
-                "log_points_accum", "log_points_redeemed",
-                "log_dollar_redeemed", "active_months", 
-                "redemption_rate", "Salary", "CLV")
-
-# brez NA
-complete_rows <- complete.cases(final_df[, clust_vars])
-sum(complete_rows)  # naj bo 16736 (ali manj)
-
-# matrika k-means
-train_kmeans <- final_df[complete_rows, clust_vars]   # uporabi indekse
-train_kmeans_scaled <- scale(train_kmeans)
-
-# final DF
-final_df$segment <- NA
-final_df$segment[complete_rows] <- km_final$cluster
-
-# so vsi
-table(final_df$segment, useNA = "ifany")   # mora biti 3 skupine + NA za tiste, ki so bili izpuščeni
-
-# povzetek
-final_df %>%
-  filter(!is.na(segment)) %>%
-  group_by(segment) %>%
-  summarise(across(c(Salary, CLV, log_total_flights, redemption_rate), 
-                   list(mean = ~mean(.), sd = ~sd(.))))
-```
-```{r}
-profile_data <- as.data.frame(km_final$centers) %>%
-  mutate(segment = factor(row_number())) %>%
-  pivot_longer(-segment, names_to = "spremenljivka", values_to = "vrednost")
-
-# porofilni črtni graf
-ggplot(profile_data, aes(x = spremenljivka, y = vrednost, 
-                         color = segment, group = segment)) +
-  geom_line(size = 1.2) +
-  geom_point(size = 3) +
-  scale_color_manual(values = barve_skupin) +
-  labs(title = "Profili segmentov (standardizirani centroidi)",
-       x = "Spremenljivka", y = "Standardizirana vrednost",
-       color = "Segment") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-Poglejmo še drugačno vizualizacijo porazdelitev spremenljivk glede na skupino.
-
-```{r}
-box_vars <- c("Salary", "CLV", "log_total_flights", "redemption_rate")
-
-# long
-box_data <- final_df %>%
-  filter(!is.na(segment)) %>%
-  select(segment, all_of(box_vars)) %>%
-  pivot_longer(-segment, names_to = "spremenljivka", values_to = "vrednost")
-
-# Boxploti
-ggplot(box_data, aes(x = factor(segment), y = vrednost, fill = factor(segment))) +
-  geom_boxplot(outlier.alpha = 0.3) +
-  facet_wrap(~ spremenljivka, scales = "free_y") +
-  scale_fill_manual(values = barve_skupin) +
-  labs(title = "Porazdelitev ključnih spremenljivk po segmentih",
-       x = "Segment", y = "Vrednost") +
-  theme_minimal() +
-  theme(legend.position = "none")
-```
-Poglejmo še kako se skupine razlikujejo po `Education`, `Marital Status`, `Gender`, `Loyalty Card`, `Enrollment Type`, `Province`. 
-
-```{r}
-# analiza kategorijskih spremenljivk po segmentih 
-# počistimo 
+# ključ za spajanje
+Customer_Activity_Ag$`Loyalty Number` <- as.character(Customer_Activity_Ag$`Loyalty Number`)
+activity_cols <- setdiff(names(Customer_Activity_Ag), "Loyalty Number")
 final_df <- final_df %>%
-  select(-any_of(c("Province", "City")))
+  select(-any_of(activity_cols))  # odstrani stare, če obstajajo
 
-# dodaj Province in City
-province_info <- Customer_Loyalty_History %>%
-  select(`Loyalty Number`, Province)
-
-city_info <- Customer_Loyalty_History %>%
-  select(`Loyalty Number`, City) %>%
-  mutate(City = fct_lump_n(City, n = 5, other_level = "Other"))
-
+# združimo
 final_df <- final_df %>%
-  left_join(province_info, by = "Loyalty Number") %>%
-  left_join(city_info, by = "Loyalty Number")
+  left_join(Customer_Activity_Ag, by = "Loyalty Number")
+```
 
-# names(final_df)
+Kot smo videli že prej, imajo številni uporabniki pri mnogih atribtuih vrednosti 0 saj gre za t.i. *"Zero inflated" porazdelitev* (porazdelitev s presežnimi ničlami). Zato bi bilo dobro uvesti nove spremenljivke, ki bi merili ali je vrednost člana pri posamezni spremenljivki večja kot nič (se pravi je uporabnik imel neko aktivnost) ali pa je enaka nič (aktivnosti ni bilo). 
 
-# sedaj definiraj seg_data
-seg_data <- final_df %>% filter(!is.na(segment))
+Končajmo še z glavnim oblikovanjem novih spremenljivk, ki agregirajo posamezne numerične vrednosti in so za primerjavo med skupinami bolj smiselne. 
 
-# nadaljuj z analizo (cat_vars, itd.)
-cat_vars <- c("Education", "Marital Status", "Gender", 
-              "Loyalty Card", "Enrollment Type", "Province", "City")
+Za vsako stranko smo torej na podlagi podatkov o posameznih interakcijah izračunali naslednje agregirane spremenljivke: (nekatere nam bodo pomagal kasneje pri uporabi strojnega učenja za segmentacijo)
 
-# deleži
-get_seg_props <- function(var) {
-  seg_data %>%
-    group_by(segment, !!sym(var)) %>%
-    summarise(n = n(), .groups = "drop") %>%
-    group_by(segment) %>%
-    mutate(prop = n / sum(n) * 100) %>%
-    ungroup() %>%
-    select(segment, category = !!sym(var), prop)
+**1. Skupna aktivnost:**
+- skupno število opravljenih letov,
+- skupna preletena razdalja,
+- skupno število zbranih točk,
+- skupno število porabljenih točk,
+- skupna vrednost porabljenih točk.
+
+**2. Časovna aktivnost:**
+- število različnih mesecev, v katerih je bila stranka aktivna,
+- število mesecev od zadnjega leta.
+
+**3. Povprečna mesečna aktivnost:**
+Za primerljivost strank z različnim številom aktivnih mesecev smo izračunali povprečne mesečne vrednosti.
+
+**4. Indikatorji aktivnosti:**
+Za spremenljivke, pri katerih se pojavljajo ničelne vrednosti, smo dodatno ustvarili binarne indikatorje, ki označujejo, ali je bila določena aktivnost sploh prisotna.
+Indikatorje smo izračunali za lete, preleteno razdaljo, zbrane točke, porabljene točke in vrednost porabljenih točk.
+
+**5. Vedenjske spremenljivke:**
+- Če stranka ni zbrala nobene točke, smo vrednost nastavili na 0.
+- Pri strankah brez opravljenih letov smo vrednost nastavili na 0.
+
+Poglejmo še porazdelitve vseh novih atributov.
+
+```{r}
+Customer_Activity_Ag %>%
+  select(
+    total_flights_sum, 
+    total_distance, 
+    points_accumulated, 
+    points_redeemed, 
+    dollar_cost_redeemed,
+    
+    avg_flights_per_month,
+    avg_distance_per_month,
+    avg_points_accum_per_month,
+    avg_points_redeemed_per_month,
+    avg_dollar_redeemed_per_month,
+    
+    months_since_last_flight,
+    avg_distance_per_flight,
+    redemption_rate
+  ) %>%
+  plot_histogram(ncol = 4L)
+```
+Vidimo, da so porazdelitve novih, nekaterih agregiranih atributov še vedno asimetrične, trenutno ne bomo uporabili dodatnih transformacij, moramo pa zato biti pozorni katere teste uporabimo (parametrične ali neparametrične). 
+
+## Analiza osnovih skupin oblikovanih gelde na kvantile
+
+Poglejmo torej ali so prisotne razlike med osnovimi skupinami oblikovanimi glede na kvartile. 
+
+Najprej se lotimo nominalnih spremenljivk. Uporabili *Hi-kvadrat* test, ki je neparametričen, in seveda tudi popravek (FDR) za večkratno testiranje. Stopnjo značilnosti določimo kot $a = 0.10$ oz. $10$%. 
+
+```{r}
+# check
+if (!("churned" %in% names(final_df)) || !("Salary_Missing" %in% names(final_df))) {
+  # Če ju ni, jih pripnemo iz Customer_Loyalty_History_miss
+  Customer_Loyalty_History_miss$`Loyalty Number` <- 
+    as.character(Customer_Loyalty_History_miss$`Loyalty Number`)
+  final_df$`Loyalty Number` <- as.character(final_df$`Loyalty Number`)
+  
+  final_df <- final_df %>%
+    left_join(
+      Customer_Loyalty_History_miss %>% 
+        select(`Loyalty Number`, churned, Salary_Missing),
+      by = "Loyalty Number"
+    )
 }
 
-props_list <- lapply(cat_vars, get_seg_props)
-names(props_list) <- cat_vars
+# hi-kvadrat
+cat_vars <- c("Gender", "Education", "Marital Status", "Loyalty Card", 
+              "Enrollment Type", "Province", "City", "churned", "Salary_Missing")
 
+# preverimo, ali vsi stolpci dejansko obstajajo
+missing_vars <- cat_vars[!cat_vars %in% names(final_df)]
+if (length(missing_vars) > 0) {
+  warning("Manjkajoči stolpci: ", paste(missing_vars, collapse = ", "))
+  # Odstranimo manjkajoče iz seznama
+  cat_vars <- cat_vars[cat_vars %in% names(final_df)]
+}
+
+chisq_results <- list()
+for (var in cat_vars) {
+  tbl <- table(final_df[[var]], final_df$clv_quartile)
+  test <- chisq.test(tbl)
+  chisq_results[[var]] <- test$p.value
+}
+p_adj_cat <- p.adjust(unlist(chisq_results), method = "fdr")
+kable(p_adj_cat)
 ```
 
+Iz tabele vidimo, da obstajajo statistični značilne razlike med nominalnimi spremenljivkami med skupinami pri: `Loyalty Card` (tip/nivo kartice zvestobe), `Education` (izobrazba), `Salary_Missing` (ali je manjkal podatek o plači) in `Marital Status` (zakonski stan). Pri ostalih statistično značilne razlike ni zaznati. 
+
 ```{r}
-# po skupinah
-cat_long <- seg_data %>%
-  select(segment, all_of(cat_vars)) %>%
-  pivot_longer(-segment, names_to = "spremenljivka", values_to = "kategorija")
 
-cat_props <- cat_long %>%
-  group_by(segment, spremenljivka, kategorija) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  group_by(segment, spremenljivka) %>%
-  mutate(prop = n / sum(n) * 100) %>%
-  ungroup()
+sig_vars <- c("Loyalty Card", "Education", "Salary_Missing", "Marital Status")
 
-# Hi-kvadrat s Cramer's V
-chisq_results <- sapply(cat_vars, function(var) {
-  tbl <- table(seg_data[[var]], seg_data$segment)
-  test <- chisq.test(tbl)
-  n <- sum(tbl)
-  cramer_v <- sqrt(test$statistic / (n * (min(dim(tbl)) - 1)))
-  c(statistic = round(test$statistic, 2), 
-    df = test$parameter,
-    p_value = round(test$p.value, 4),
-    cramer_v = round(cramer_v, 3))
-})
-
-t(chisq_results) %>%
-  as.data.frame() %>%
-  kable(caption = "Hi-kvadrat test in Cramer's V za razlike med segmenti")
-
-# združeni grafi
 plot_list <- list()
-for (var in cat_vars) {
-  p <- cat_props %>%
-    filter(spremenljivka == var) %>%
-    ggplot(aes(x = factor(segment), y = prop, fill = kategorija)) +
-    geom_col(position = "fill") +
-    scale_y_continuous(labels = scales::percent) +
-    labs(title = paste("Deleži kategorij za", var),
-         x = "Segment", y = "Delež", fill = var) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 0))
+
+for (var in sig_vars) {
+  # za Salary_Missing uporabimo as.factor()
+  if (var == "Salary_Missing") {
+    p <- ggplot(final_df, aes(x = clv_quartile, fill = as.factor(.data[[var]]))) +
+      geom_bar(position = "fill") +
+      scale_y_continuous(labels = scales::percent) +
+      scale_fill_discrete(labels = c("0" = "Not missing", "1" = "Missing")) +
+      labs(
+        title = "Salary missing",
+        x = NULL,
+        y = "procentage",
+        fill = "sallary"
+      ) +
+      theme_minimal() +
+      theme(
+        legend.position = "bottom",
+        axis.text.x = element_text(angle = 0, size = 9),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(size = 11, face = "bold")
+      )
+  } else {
+    p <- ggplot(final_df, aes(x = clv_quartile, fill = .data[[var]])) +
+      geom_bar(position = "fill") +
+      scale_y_continuous(labels = scales::percent) +
+      labs(
+        title = var,
+        x = NULL,
+        y = "Procentage",
+        fill = var
+      ) +
+      theme_minimal() +
+      theme(
+        legend.position = "bottom",
+        axis.text.x = element_text(angle = 0, size = 9),
+        legend.text = element_text(size = 8),
+        plot.title = element_text(size = 11, face = "bold")
+      )
+  }
+  
   plot_list[[var]] <- p
 }
 
-# združi v mrežo
-combined <- wrap_plots(plot_list, ncol = 2)
-print(combined)
+# mreža 2x2
+combined_plot <- (plot_list[[1]] + plot_list[[2]]) / 
+                 (plot_list[[3]] + plot_list[[4]])
+
+combined_plot +
+  plot_annotation(
+    title = "Deleži kategorij po CLV kvartilih (značilne spremenljivke)",
+    theme = theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+  )
 ```
+Poglejmo še grafičen prikaz teh spremenljivk, katerih vrednosti so statistično značilne med skupinami. 
 
-Ni statistično značilnih razlik med skupinami v ostalih kategorijah, pri $a=0,05%$. 
+Pri spremenljivki `Loyalty Card` (nivo kartice zvestobe) vidimo, da v najnižjem CLV kvartilu (Q1) prevladuje kartica Star, Aurora je odsotna. V višjih kvartilih (Q3–Q4) se deleži vseh treh kartic izenačijo. Kartica najvrejetneje dober napovednik vrednosti stranke. Seveda se je potrebno zavedati, da je nivo kartice zvestobe povezan s tem koliko jo stranka uporablja (večja popraba je nagrajena z višjim nivojem).
 
-Poglejmo še kakšen je prispevek posamezne skupine `CLV` in kakšen delež celotne populacije posamezne skupine predstavljajo. 
+`Education` (izobrazba) je statistično značilne med skupinami. Razlike so, a zmerne: delež College rahlo pada, Bachelor narašča, Doctor/Master sta stabilna skozi skupine in majhna.
+
+`Salary Missing` (ali plača manjka) je manj prisotna v Q4 in je je več v Q2. Glede na ugotovitev, da manjka izključno pri visoko šolsko izobraženih *(Collage)* to ni toliko presenetljivo.
+
+Pri `Martial Status` (zakonski stan) opazimo, da se delež samskih *(Single)* se rahlo znižuje od Q1 proti Q4, delež ločenih *(Divorced)* pa rahlo narašča.
+
+Nadaljujmo še z vedenjskimi spremenljivkami. Predvidevamo lahko, da bodo nekatere med seboj zelo korelirane (tako osnovne kot tiste oblikovane naknadno), tako, da jih odstranimo. Namen je, da ne testiramo in vizualiziramo vse, saj merijo podobne aktivnosti.
 
 ```{r}
-# filter
-seg_summary <- final_df %>%
-  filter(!is.na(segment)) %>%
-  group_by(segment) %>%
-  summarise(
-    n_customers = n(),
-    pct_customers = n() / nrow(.) * 100,
-    total_CLV = sum(CLV, na.rm = TRUE),
-    pct_CLV = sum(CLV, na.rm = TRUE) / sum(final_df$CLV, na.rm = TRUE) * 100,
-    avg_CLV = mean(CLV, na.rm = TRUE)
-  ) %>%
-  ungroup() %>%
-  arrange(segment)
+# agregirane
+vars_all <- c(
+  "total_flights_sum", "total_distance", "points_accumulated", "points_redeemed", 
+  "dollar_cost_redeemed", "active_months", "months_since_last_flight",
+  "avg_flights_per_month", "avg_distance_per_month", "avg_points_accum_per_month",
+  "avg_points_redeemed_per_month", "avg_dollar_redeemed_per_month",
+  "redemption_rate", "avg_distance_per_flight"
+)
 
-kable(seg_summary, digits = 2, 
-      caption = "Velikost posameznih skupin in njihov CLV",
-      col.names = c("Skupina", "N", "% Customers", "Total CLV", "% of CLV", "Avg CLV"))
+vars_present <- vars_all[vars_all %in% names(final_df)]
+
+df_corr <- final_df %>% select(all_of(vars_present))
+
+df_corr <- df_corr %>%
+  select(where(~sd(., na.rm = TRUE) > 0))
+
+# cor plot
+cor_matrix <- cor(df_corr, use = "complete.obs")
+
+corrplot(cor_matrix, 
+         method = "color", 
+         type = "upper", 
+         tl.col = "black", 
+         tl.srt = 45, 
+         title = "Korelacijska matrika agregiranih vedenjskih spremenljivk",
+         mar = c(0, 0, 2, 0))
 ```
 
-Skupine imajo v povprečju na uporabnika skoraj enak prispevek `CLV`, zaradi velikosti pa je komulativen prispevek 2. skupine največji `CLV` ($67.9$%), sledi 1. skupina ($21.9$%), na zadnjem mestu pa je 3. skupina ($10.2$%).
+Na podlagi korelacijske matrike (in tabele stopnje korelacije spremenljivk) vidimo, da so nekatere spremenljivke med seboj močno korelirane. Zato izberemo nabor petih spremenljivk, ki merijo različne dimenzije vedenja: `avg_flights_per_month`  (povprečno število letov na mesec), ` avg_distance_per_flight` (povprečna razdalja na let), ` avg_points_accum_per_month`  (povprečno število zbranih točk na mesec), ` redemption_rate`  (stopnja unovčitve točk) in ` total_flights_sum` (vsi leti skupaj).
+
+```{r}
+# izbrane spremenljivke
+profile_vars_raw <- c(
+  "avg_flights_per_month",      
+  "avg_distance_per_flight",    
+  "avg_points_accum_per_month", 
+  "redemption_rate",            
+  "total_flights_sum"           
+)
+
+slovenska_imena_raw <- c(
+  "avg_flights_per_month"      = "Povpr. letov na mesec",
+  "avg_distance_per_flight"    = "Povpr. razdalja na let (km)",
+  "avg_points_accum_per_month" = "Povpr. zbranih točk na mesec",
+  "redemption_rate"            = "Stopnja unovčitve točk",
+  "total_flights_sum"          = "Skupno število letov"
+)
+
+# profil grafi
+profile_data_raw <- final_df %>%
+  group_by(clv_quartile) %>%
+  summarise(across(all_of(profile_vars_raw), mean, na.rm = TRUE)) %>%
+  pivot_longer(-clv_quartile, names_to = "spremenljivka", values_to = "povprecje") %>%
+  group_by(spremenljivka) %>%
+  mutate(z_vrednost = (povprecje - mean(povprecje)) / sd(povprecje)) %>%
+  ungroup()
+
+p1 <- ggplot(profile_data_raw, aes(x = spremenljivka, y = z_vrednost, 
+                                   color = clv_quartile, group = clv_quartile)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.6) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3.5) +
+  scale_x_discrete(labels = slovenska_imena_raw) +
+  coord_cartesian(ylim = c(-2, 2)) +
+  labs(
+    title = "Profil kvartilnih skupin glede na vedenjske spremenljivke",
+    subtitle = "Standardizirana povprečja (z-score); 0 = skupno povprečje",
+    x = NULL,
+    y = "Standardizirana vrednost (z-score)",
+    color = "Kvartilna skupina"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    legend.position = "bottom"
+  )
+
+print(p1)
+
+# ANOVA + Bonferronijevi
+p_anova <- numeric(length(profile_vars_raw))
+names(p_anova) <- profile_vars_raw
+
+for (v in profile_vars_raw) {
+  model <- aov(as.formula(paste(v, "~ clv_quartile")), data = final_df)
+  p_anova[v] <- summary(model)[[1]][["Pr(>F)"]][1]
+}
+
+# Bonferroni
+p_adj_bonf <- p.adjust(p_anova, method = "bonferroni")
+
+results_anova <- data.frame(
+  Spremenljivka = profile_vars_raw,
+  `F-statistika` = NA,
+  df = NA,
+  `p‑vrednost` = p_anova,
+  `Bonferroni p` = p_adj_bonf,
+  check.names = FALSE
+)
+
+for (i in seq_along(profile_vars_raw)) {
+  model <- aov(as.formula(paste(profile_vars_raw[i], "~ clv_quartile")), data = final_df)
+  sm <- summary(model)[[1]]
+  results_anova[i, "F-statistika"] <- round(sm[["F value"]][1], 3)
+  results_anova[i, "df"] <- paste(sm[["Df"]][1], sm[["Df"]][2], sep = ", ")
+}
+
+kable(results_anova, digits = 4, 
+      caption = "ANOVA za izbrane vedenjske spremenljivke glede na kvartilno skupino CLV")
+```
+Kratek povzetek profilov strank po CLV kvartilih:
+- Q1 (najnižji CLV): podpovprečne vrednosti pri vseh spremenljivkah razen rahlno nadpovprečno vnovčevanju točk in povprečne razdalje na let. Malo letijo, malo zbirajo točk in prevozijo malo km, a nadpovprečno unovčijo zbrane točke (visoka stopnja unovčitve).
+- Q2 (nizko-srednji): podoben trend kot Q1, ampak nekoliko višje vrednosti (večinoma podpovprečne vrednosti).
+- Q3 (srednje-visoki): nadpovprečne vrednosti pri vseh spremenljivkah razen unovčevanja točk in skupnega števila letov. 
+Q4 (najvišji CLV): presenetljivo nižje povprečne vrednosti kot Q3, povprečna razdalja na let je celo najnižja, prav tako vnovčevanje točk (oboje podpovrečno), imajo nadpovprečno skupno število letov in prav največ med vsemi skupinami.
+
+Višji CLV ni povezan z več pogostostjo ali unovčevanjem točk, temveč z višjo "vrednostjo" posameznih letov (razdalja, obseg). Vidimo tudi, da sta si skupini z Q1 (najnižji CLV) in Q2 (nizko-srednji) zelo podobni, mogoče lahko to uporabimo v prihodnji analizi sgmentiranja z strojnim učenjem za določenje števila skupin. Seveda v primeru, če bo optimalno število skupin, drugačno kot tukaj.
+
+Kljub temu, da so na grafu vidne jasne razlike, ne moremo trditi, da gre za statistično značilne razlike. Vendar lahko vseeno uporabimo rezultate za usmiritev in nadaljno razikovanje. 
+
+## Oblikovanje segmentov s pomočjo strojnega učenja in priprava podatkov za analizo skupin
+
+Zanimivo bi bilo preveriti, če lahko s pomočjo strojnega učenja določimo skupine glede na vedenje (vedenjske spremenljivke od prej, brez `CLV`) in dobimo podobne kot v prejšnjem podpoglavju ali pa različne.
+
+Uporabili bomo algoritem *k najbližjih sosedov (k-means)*. To je metoda, ki spada pod nenadzorovano učenje, saj iščemo skrite vzorce v podatkih. V našem primeru s pomočjo Evklidske razdalje, ki meri razdaljo med enotami glede na vrednosti pri posamezni izbrani spremenljivki. Želimo, da so enote v skupini notranjo homogene hkrati pa čim bolj različne med skupinami samimi.
+
+Kot smo videli prej je smiselno zaradi *k-means* algoritma (in Evkliske razdalje), ki predpostavlja iste porazdelitve in oblike skupin, uporabiti logaritmirane vrednosti (desno asimetričnih spremenljivk) in jih skalirati (standardizirati).  
+
+```{r}
+# izbrane spremenljivke, iste kot za ANOVO
+profile_vars <- c(
+  "avg_flights_per_month",      
+  "avg_distance_per_flight",    
+  "avg_points_accum_per_month", 
+  "redemption_rate",            
+  "total_flights_sum"        
+)
+
+# Priprava podatkov za k-means 
+# Ustvarimo log-transformirane različice
+final_df <- final_df %>%
+  mutate(
+    log_avg_flights_per_month = log1p(avg_flights_per_month),
+    log_avg_distance_per_flight = log1p(avg_distance_per_flight),
+    log_avg_points_accum_per_month = log1p(avg_points_accum_per_month),
+    # redemption_rate pustimo kot je (že 0-1), ali pa jo log1p ni smiselna, ker ima vrednosti 0-1
+    log_total_flights_sum = log1p(total_flights_sum)
+  )
+
+# Izberemo log-spremenljivke za k-means
+kmeans_vars <- c(
+  "log_avg_flights_per_month",
+  "log_avg_distance_per_flight",
+  "log_avg_points_accum_per_month",
+  "redemption_rate",           
+  "log_total_flights_sum"
+)
+
+# Podatki brez NA
+kmeans_data <- final_df %>%
+  select(all_of(kmeans_vars)) %>%
+  drop_na()
+
+# Standardiziramo
+kmeans_scaled <- scale(kmeans_data)
+```
+
+```{r}
+# elbow
+set.seed(42)
+wss <- sapply(2:10, function(k) {
+  kmeans(kmeans_scaled, centers = k, nstart = 30)$tot.withinss
+})
+plot(2:10, wss, type = "b", main = "Elbow")
+```
+Za določitev števila skupin lahko uporabimo princip iskanja komolca (*elbow plot*), kjer iščemo prelom, ta se pojavi med 3 in 4. Zaradi ugotovitve, da sta si bili skupini Q1 (najnižji CLV) in Q2 (nizko srednj CLV) v prejšnjem podpoglavju zelo podobni pri vseh izbranih vedenjskih spremenljivkah, izberemo torej 3 skupine. 
+
+Poglejmo še povprečne vrednosti izbranih vedenjskih spremenljivk na originalni (nelogaritmirani sklali) po skupinah oblikovanih s *k-means* algoritmom.
+
+```{r}
+# nekaj heca, pozenemo se tukaj!
+# k means 3 skup
+set.seed(42)
+km_result <- kmeans(kmeans_scaled, centers = 3, nstart = 30)
+
+# Ker smo pri pripravi kmeans_data uporabili drop_na(), 
+# moramo indekse pravilno poravnati nazaj na final_df
+kmeans_data_idx <- final_df %>%
+  select(all_of(kmeans_vars)) %>%
+  mutate(row_id = row_number()) %>%
+  drop_na() %>%
+  pull(row_id)
+
+final_df$segment_km <- NA_integer_
+final_df$segment_km[kmeans_data_idx] <- km_result$cluster
+```
+
+
+```{r}
+# ---- Profilni graf na originalnih (nelogaritmiranih) spremenljivkah ----
+# Uporabimo iste spremenljivke kot za k-means, vendar originalne
+profile_vars_orig <- c(
+  "avg_flights_per_month",
+  "avg_distance_per_flight",
+  "avg_points_accum_per_month",
+  "redemption_rate",
+  "total_flights_sum"
+)
+
+# Izračunamo povprečja po segmentih
+profile_orig <- final_df %>%
+  filter(!is.na(segment_km)) %>%
+  group_by(segment_km) %>%
+  summarise(across(all_of(profile_vars_orig), mean, na.rm = TRUE)) %>%
+  pivot_longer(-segment_km, names_to = "spremenljivka", values_to = "povprecje") %>%
+  group_by(spremenljivka) %>%
+  mutate(z_vrednost = (povprecje - mean(povprecje)) / sd(povprecje)) %>%
+  ungroup()
+
+# Slovenska imena za originalne spremenljivke
+slovenska_imena_orig <- c(
+  "avg_flights_per_month"      = "Povpr. letov na mesec",
+  "avg_distance_per_flight"    = "Povpr. razdalja na let (km)",
+  "avg_points_accum_per_month" = "Povpr. zbranih točk na mesec",
+  "redemption_rate"            = "Stopnja unovčitve točk",
+  "total_flights_sum"          = "Skupno število letov"
+)
+
+# ---- Profilni graf ----
+ggplot(profile_orig, aes(x = spremenljivka, y = z_vrednost, 
+                         color = as.factor(segment_km), group = as.factor(segment_km))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", size = 0.8) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3.5) +
+  scale_x_discrete(labels = slovenska_imena_orig) +
+  coord_cartesian(ylim = c(-2.5, 2.5)) +
+  labs(
+    title = "Profili segmentov na originalnih spremenljivkah",
+    subtitle = "Standardizirana povprečja (z-score); 0 = skupno povprečje",
+    x = NULL,
+    y = "Standardizirana vrednost (z-score)",
+    color = "Segment"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    legend.position = "bottom",
+    plot.subtitle = element_text(size = 9, color = "gray50")
+  )
+```
+
+Vidimo, da je ima skupina `1` podobne povprečne vrednosti spremenljivk kot sta to imeli skupini Q1 (najnižji CLV) in Q2 (nizko srednj CLV) v prejšnjem podpoglavju, vrednosti vseh spremenljivk ima močno podpovprečne za razliko od segmentacije v prejšnjem poglavju, kjer so vsaj točke nadpovporečno vnovčevali. To so torej uporabniki, ki verjetno občasno letijo in ne koristijo ugodnosti.
+Skupina `2` je nekoliko podobna Q4 (najvišji CLV), to so uporabniki, ki imajo pri vseh spremenljivkah nadpovprečne vrednosti razen pri vnovčevanju točk. Potem pa imamo še `3` skupino, ta je nekoliko analogna Q3 (srednje-visok CLV), kjer je nadpovprečno uporabniki vnovčjujejo točke in letijo na daljše razdalje (nadpovprečna vrednost), skupno število letov pa imajo podpovprečno kot tudi zbranih točk na mesec.  
+
+```{r}
+vars_clustering <- c("avg_flights_per_month", "avg_distance_per_flight", 
+                     "avg_points_accum_per_month", "redemption_rate", "total_flights_sum")
+
+vars_other <- c("CLV", "Salary", "active_months",
+                "total_distance", "points_accumulated", "points_redeemed")
+
+all_test_vars <- c(vars_clustering, vars_other)
+
+# ANOVA z Bonferronijem 
+p_anova <- sapply(all_test_vars, function(v) {
+  model <- aov(as.formula(paste(v, "~ as.factor(segment_km)")), data = final_df)
+  summary(model)[[1]][["Pr(>F)"]][1]
+})
+
+p_adj_bonf <- p.adjust(p_anova, method = "bonferroni")
+
+# Tabela rezultatov
+anova_table <- data.frame(
+  Spremenljivka = all_test_vars,
+  F_stat = NA,
+  df = NA,
+  p_value = round(p_anova, 6),
+  Bonferroni_p = round(p_adj_bonf, 6)
+)
+
+for (i in seq_along(all_test_vars)) {
+  model <- aov(as.formula(paste(all_test_vars[i], "~ as.factor(segment_km)")), data = final_df)
+  sm <- summary(model)[[1]]
+  anova_table[i, "F_stat"] <- round(sm[["F value"]][1], 3)
+  anova_table[i, "df"] <- paste(sm[["Df"]][1], sm[["Df"]][2], sep = ", ")
+}
+
+kable(anova_table, digits = 6, caption = "ANOVA – razlike med K‑means segmenti (Bonferroni)")
+```
+
+Preverimo še, če se skupine med seboj razlikujejo po ostalih spremenljivkah. Prvih 5 spremenljivk (`avg_flights_per_month` (Povpr. letov na mesec), `avg_distance_per_flight`(Povpr. razdalja na let), `avg_points_accum_per_month`(Povpr. zbranih točk na mesec), `redemption_rate`(Stopnja unovčitve točk), `total_flights_sum`(Skupno število letov)) je statistično značilnih, ampak je to zgolj preverjanje ali algoritem deluje prav, saj so bile le te spremenljivke uporabljene za segmentacijo. `CLV` in `Salary` se med skupinami ne razlikujeta statistično značilno. Spremenljivke `active_months`, `total_distance`, `points_accumulated`, `points_redeemed` pa sem skupinami razlikujejo statistično značilno, sicer gre za nekoliko korelirane spremenljivke z tistimi uporabljenimi za segmentiranje, a vseeno je to lahko zanimiva informacija.
+
+```{r}
+# kategorične spremenljivke za testiranje
+cat_vars_seg <- c("Gender", "Education", "Marital Status", "Loyalty Card", 
+                  "Enrollment Type", "Province", "City", "churned", "Salary_Missing")
+
+cat_vars_seg <- cat_vars_seg[cat_vars_seg %in% names(final_df)]
+
+chisq_seg_results <- list()
+for (var in cat_vars_seg) {
+  tbl <- table(final_df[[var]], final_df$segment_km)
+  test <- chisq.test(tbl)
+  chisq_seg_results[[var]] <- test$p.value
+}
+
+# FDR popravek 
+p_adj_seg_cat <- p.adjust(unlist(chisq_seg_results), method = "fdr")
+kable(p_adj_seg_cat, caption = "Hi‑kvadrat test – razlike med segmenti (kategorične spremenljivke)")
+```
+
+Poglejmo še kako se dobljene skupine razlikujejo po nominalnih spremenljivkah. 
+
+```{r}
+# Značilne kategorične spremenljivke med segmenti
+sig_cat_vars <- c("Enrollment Type", "churned")
+
+plot_list_seg <- list()
+
+for (var in sig_cat_vars) {
+  if (var == "churned") {
+    # churned je 0/1 – prilagodimo oznake
+  if (var == "churned") {
+      p <- ggplot(final_df %>% filter(!is.na(segment_km)), 
+                  aes(x = as.factor(segment_km), fill = as.factor(churned))) +
+        geom_bar(position = "fill") +
+        scale_y_continuous(labels = scales::percent) +
+        scale_fill_discrete(
+          labels = c("1" = "Odliv", "0" = "Aktiven")   
+        ) +
+        labs(
+          title = "Odliv (churned) po segmentih",
+          x = "Segment",
+          y = "Delež",
+          fill = "Status"
+        ) +
+        theme_minimal() +
+        theme(
+          legend.position = "bottom",
+          axis.text.x = element_text(size = 10)
+        )
+    }
+  } else {
+    p <- ggplot(final_df %>% filter(!is.na(segment_km)), 
+                aes(x = as.factor(segment_km), fill = .data[[var]])) +
+      geom_bar(position = "fill") +
+      scale_y_continuous(labels = scales::percent) +
+      labs(
+        title = var,
+        x = "Segment",
+        y = "Delež",
+        fill = var
+      ) +
+      theme_minimal() +
+      theme(
+        legend.position = "bottom",
+        axis.text.x = element_text(size = 10)
+      )
+  }
+  plot_list_seg[[var]] <- p
+}
+
+# Združimo v eno vrsto (2 grafa)
+combined_seg <- wrap_plots(plot_list_seg, ncol = 2)
+print(combined_seg)
+```
+TODO: komentar
+
+## Zaključki
+TODO
+
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje ----
 # možnih ukrepov za njihovo zadržanje
