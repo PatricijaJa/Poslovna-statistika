@@ -1656,13 +1656,14 @@ TODO
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje ----
 # možnih ukrepov za njihovo zadržanje
 
-## Osnovni pregled spremenljivk
 ## Definiranje churn
 
+Za začetek, dodamo novo spremenljivko `Churn`, ki je binarna, toraj zavzema 
+vrednosti 0 in 1. 1 pomeni da je stranka prekinila članstvo in 0 da članstva ni 
+zapustila.
 ```{r}
 # Nova spremenljivka Churn - binarna
-
-Customer_Loyalty_History <- Customer_Loyalty_History %>%
+CLH_Churn <- Customer_Loyalty_History %>%
   mutate(
     Churn = if_else(is.na(`Cancellation Year`), 0, 1) 
     # Churn = 1 → stranka je zapustila članstvo
@@ -1670,122 +1671,280 @@ Customer_Loyalty_History <- Customer_Loyalty_History %>%
   )
 ```
 
-Dodali smo novo spremenljivko `Churn`, ki je binarna, toraj zavzema vrednosti 0
-in 1. 1 pomeni da je stranka prekinila članstvo in 0 da članstva ni zapustila.
-
 V nadaljevanju smo pogledali podatke in ugotovili, da je članstvo zapustilo
 2067 oseb, kar predstavlja 12% vseh kartičarjev.
 
 ```{r}
-kable(Customer_Loyalty_History %>%
+kable(CLH_Churn %>%
   count(Churn) %>%
   mutate(
     '%' = round(n / sum(n) * 100)
   ))
 ```
 
-## Numerične spremenljivke
-
 ```{r}
-kable(Customer_Loyalty_History %>%
-  group_by(Churn) %>%
-  summarise(
-    n = n(),
-    `mean salary` = mean(Salary, na.rm = TRUE),
-    `median salary` = median(Salary, na.rm = TRUE),
-    `mean clv` = mean(CLV, na.rm = TRUE),
-    `median clv` = median(CLV, na.rm = TRUE)
-  ))
+CLH_Churn %>%
+  ggplot(aes(x = factor(Churn))) +
+  geom_bar() +
+  labs(
+    x = "Churn",
+    y = "Number of customers",
+    title = "Distribution of customer churn"
+  )
 ```
 
-Če gledamo odliv strank po plači in CLV ne opazimo velikih odstopanj. 
+## Pregled in analiza spremenljivk
+
+V nadaljevanju pogledamo osnovne statistične lastnosti spremenljivk.
+Najprej združimo podatke iz obeh tabel. 
+Dobili smo tabelo "merged", ki je longitudinalna tabela torej 1 kartičar x več
+mesecev. Za napovedovanje v nadaljevanju pa želimo, da posamezna vrstica predstavlja posameznega karičarja.
+
+```{r}
+# Združitev obeh podatkovnih tabel
+
+merged <- CLH_Churn %>%
+  left_join(Customer_Flight_Activity_Clean, by = "Loyalty Number")
+
+```
+
+V nadaljevanju naredimo analizo vsake spremenljivke. Spremenljivke ločimo 
+najprej na numerične in kategorične in jih obravnavamo ločeno.
+
+
+### Numerične spremenljivke
+
+Najprej določimo numerične spremenljivke, ki jih v nadaljevanju analiziramo. 
+Za vsako spremenljivko izračunamo povprečje, mediano in standardni odklon pri 
+različnih vrednostih stolpca `Churn`.
+```{r}
+numeric_vars <- c(
+  "Salary",
+  "CLV",
+  "Total Flights",
+  "Distance",
+  "Points Accumulated",
+  "Points Redeemed",
+  "Dollar Cost Points Redeemed"
+)
+```
+
+```{r}
+numeric_summary <- map_dfr(
+  numeric_vars,
+  ~ merged %>%
+    distinct(`Loyalty Number`, Churn, .data[[.x]]) %>%
+    group_by(Churn) %>%
+    summarise(
+      n = n(),
+      mean = mean(.data[[.x]], na.rm = TRUE),
+      median = median(.data[[.x]], na.rm = TRUE),
+      sd = sd(.data[[.x]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(variable = .x, .before = 1)
+)
+numeric_summary
+```
+
+Pri spremenljivki Salary so razlike med skupinama majhne, medtem ko so pri CLV 
+razlike nekoliko bolj izrazite. Na podlagi opisne analize lahko govorimo o 
+razlikah med skupinama, ne moremo pa še sklepati o vzročnem vplivu posamezne 
+spremenljivke na churn.
+
+Podobno kot zgornja tabela, prikazuje tudi spodnji graf.
+Pri Points Redeemed je pri strankah, ki so odpovedale članstvo, opazna večja 
+koncentracija nizkih vrednosti. Pri višjih vrednostih se porazdelitvi skupin 
+bolj razlikujeta, pri čemer je med strankami, ki so ostale v programu, več 
+strank z višjim številom unovčenih točk. To nakazuje na možno povezavo med 
+uporabo programa in vztrajanjem v programu.
+
+
+```{r}
+for (var in numeric_vars) {
+  
+  p <- merged %>%
+    distinct(`Loyalty Number`, Churn, .data[[var]]) %>%
+    ggplot(aes(x = .data[[var]], 
+               fill = factor(Churn),
+               colour = factor(Churn))) +
+    geom_density(alpha = 0.3, na.rm = TRUE) +
+    labs(
+      title = paste("Distribution of", var, "by churn"),
+      x = var,
+      y = "Density",
+      fill = "Churn",
+      colour = "Churn"
+    ) +
+    theme_minimal()
+  
+  print(p)
+}
+```
 
 ## Kategorične spremenljivke
+Za kategorične spreemlljivke najprej izračunamo število strank znotraj posamezne 
+vrednosti izbrane spremenljivke in delež strank, ki so odšle iz programa zvestobe.
+Ta delež mora biti primerljiv pri vseh vrednostih izbrane spremenljivke, da 
+lahko ustrezno primerjamo rezultate.
 
 ```{r}
-###################################
-# LETO
-###################################
+par(mfrow=c(4,2))
+categorical_vars <- c(
+  "Gender",
+  "Education",
+  "Marital Status",
+  "Loyalty Card",
+  "Enrollment Type"
+)
 
-enrollment <- Customer_Loyalty_History %>%
-  count(`Enrollment Year`) %>%
-  rename(
-    Year = `Enrollment Year`,
-    Enrollment = n
-  )
+categorical_summary <- map_dfr(
+  categorical_vars,
+  ~ merged %>%
+    distinct(`Loyalty Number`, Churn, .data[[.x]]) %>%
+    group_by(.data[[.x]]) %>%
+    summarise(
+      customers = n(),
+      churned = sum(Churn),
+      churn_rate = mean(Churn) * 100,
+      .groups = "drop"
+    ) %>%
+    mutate(variable = .x) %>%
+    rename(category = 1)
+)
 
-cancellation <- Customer_Loyalty_History %>%
-  filter(!is.na(`Cancellation Year`)) %>%
-  count(`Cancellation Year`) %>%
-  rename(
-    Year = `Cancellation Year`,
-    Cancellation = n
-  )
+categorical_summary
 
-year_data <- full_join(enrollment, cancellation, by = "Year") %>%
-  mutate(
-    Enrollment = replace_na(Enrollment, 0),
-    Cancellation = replace_na(Cancellation, 0)
-  ) %>%
-  pivot_longer(
-    cols = c(Enrollment, Cancellation),
-    names_to = "Type",
-    values_to = "Number"
-  )
+for (var in categorical_vars) {
+  
+  p <- merged %>%
+    distinct(`Loyalty Number`, Churn, .data[[var]]) %>%
+    ggplot(aes(x = .data[[var]], fill = factor(Churn))) +
+    geom_bar(position = "fill") +
+    labs(
+      title = paste("Churn by", var),
+      x = var,
+      y = "Proportion",
+      fill = "Churn"
+    )
+  
+  print(p)
+}
+```
 
-ggplot(year_data, aes(x = factor(Year), y = Number, fill = Type)) +
-  geom_col(position = "dodge") +
-  labs(
-    title = "Customer enrollment and cancellation by year",
-    x = "Year",
-    y = "Number of customers",
-    fill = "Type"
-  )
+Razlike v churn rate med kategorijami posameznih demografskih spremenljivk so 
+relativno majhne. To nakazuje, da demografske značilnosti v tej eksploratorni 
+analizi nimajo tako izrazite povezave s churnom kot spremenljivke, povezane z 
+aktivnostjo strank.
 
-###################################
-# MESEC
-###################################
+### Aktivnost strank
 
-enrollment_month <- Customer_Loyalty_History %>%
-  count(`Enrollment Month`) %>%
-  rename(
-    Month = `Enrollment Month`,
-    Enrollment = n
-  )
-
-cancellation_month <- Customer_Loyalty_History %>%
-  filter(!is.na(`Cancellation Month`)) %>%
-  count(`Cancellation Month`) %>%
-  rename(
-    Month = `Cancellation Month`,
-    Cancellation = n
-  )
-
-month_data <- full_join(enrollment_month, cancellation_month, by = "Month") %>%
-  pivot_longer(
-    cols = c(Enrollment, Cancellation),
-    names_to = "Type",
-    values_to = "Number"
-  )
-
-ggplot(month_data, aes(x = factor(Month), y = Number, fill = Type)) +
-  geom_col(position = "dodge") +
-  labs(
-    title = "Customer enrollment and cancellation by month",
-    x = "Month",
-    y = "Number of customers",
-    fill = "Type"
+Za nadaljno analizo je pomembna tudi aktivnost strank. Spodaj izračunamo osnovne
+statistične vrednosti spremenljivk, ki odražajo aktivnost strank.
+```{r}
+merged %>%
+  group_by(Churn) %>%
+  summarise(
+    mean_flights = mean(`Total Flights`, na.rm = TRUE),
+    median_flights = median(`Total Flights`, na.rm = TRUE),
+    mean_distance = mean(Distance, na.rm = TRUE),
+    mean_points = mean(`Points Accumulated`, na.rm = TRUE)
   )
 ```
 
-Iz zgornjega gradfikona vidimo, da se število oseb, ki prekličjo članstvo v 
-kartici zvestobe z leti povečuje. 
-V nadaljevanju nas zanima koliko let in ali so kakšne velike razlike v letih oz.
-mesecih izstopa iz članstva.
+### Korelacije med spremenljivkami
+
+Za nadaljno napovedovanje je pomembno ugotoviti morebitne odvisnosti in
+korelacije med spremenljivkami.
+
+```{r message=FALSE}
+merged %>%
+  select(
+    Salary,
+    CLV,
+    `Total Flights`,
+    Distance,
+    `Points Accumulated`,
+    `Points Redeemed`
+  ) %>%
+  cor(use = "complete.obs")
+
+cor_data <- merged %>%
+  distinct(`Loyalty Number`, across(all_of(numeric_vars))) %>%
+  select(all_of(numeric_vars))
+
+cor_matrix <- cor(
+  cor_data,
+  use = "pairwise.complete.obs"
+)
+
+corrplot::corrplot(
+  cor_matrix,
+  method = "color",
+  type = "upper",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 45
+)
+```
+
+Zgornji grafikon prikazuje korelacijo med spremelnjivkami. Opazno je, da so
+spremenljivke `Total flights`, `Distance`, `Points accumulated` in 
+`Points Redeemed` med sabo močno pozitivno korelirane, kar je glede na opis
+spremenljivk tudi smiselno.
+
+### Pregled časovne vrste odhodov strank iz programa zvestobe
+
+V nadaljevanju prikažemo vizualni pregled in analizo odhodov strank glede na 
+časovno komponento.
+
+```{r}
+churn_time <- CLH_Churn %>%
+  filter(Churn == 1) %>%
+  mutate(
+    cancellation_date = as.Date(
+      paste(`Cancellation Year`, `Cancellation Month`, "01", sep = "-")
+    )
+  ) %>%
+  count(cancellation_date)
+
+ggplot(churn_time, aes(x = cancellation_date, y = n)) +
+  geom_line() +
+  labs(
+    title = "Number of customer cancellations over time",
+    x = "Cancellation date",
+    y = "Number of cancellations"
+  ) +
+  theme_minimal()
+```
+
+Zgornji linijski grafikon prikazuje, da se število odhodov povečuje skozi leta. 
+Največji skok je opazen v drugi polovici leta 2018.
+
+```{r}
+churn_month <- CLH_Churn %>%
+  filter(Churn == 1) %>%
+  count(`Cancellation Month`)
+
+ggplot(churn_month,
+       aes(x = factor(`Cancellation Month`), y = n)) +
+  geom_col() +
+  labs(
+    title = "Customer cancellations by month",
+    x = "Cancellation month",
+    y = "Number of cancellations"
+  ) +
+  theme_minimal()
+```
+
+Zgornji grafikon prikazuje porazdelitev odhodov iz programa zvestobe po 
+mesecih v letu. 
+Iz grafa opazimo, da je največ odhodov v poletnih mesecih in v zadnjih 
+dveh mesecih v letu. Opazna je torej neka sezonska komponenta.
 
 ```{r}
 ggplot(
-  Customer_Loyalty_History %>%
+  CLH_Churn %>%
     filter(!is.na(`Cancellation Year`)),
   aes(x = factor(`Enrollment Year`),
       fill = factor(`Cancellation Year`))
@@ -1800,232 +1959,315 @@ ggplot(
 ```
 
 Zgornji grafikon je zelo poveden, saj je možno opaziti vzorec, in sicer je vidno,
-da večina kartičarjev odide po 1 letu. Največ kartičarjev so izgubili v letu
-2015.
-Pri kohorti 2017 je posebej izrazit churn v letu 2018.
-Leto 2018 (vpisa) pa je nekoliko problematično za neposredno primerjavo, saj ne
-vemo ali so osebe vpisane v članstvo odšle po 1 letu.
-
-## COHORT CHURN RATE --- za naredit
-
-```{r}
-ggplot(
-  Customer_Loyalty_History %>%
-    filter(!is.na(`Cancellation Month`)),
-  aes(x = factor(`Enrollment Month`),
-      fill = factor(`Cancellation Month`))
-) +
-  geom_bar() +
-  labs(
-    title = "Churned customers by enrollment and cancellation month",
-    x = "Enrollment month",
-    y = "Number of churned customers",
-    fill = "Cancellation month"
-  )
-```
-
-Glede na zanimive razultate pri preklicu kartice po letih, nas je zanimalo ali
-opazimo vzorec tudi po mesecih.
-Tudi ko gledalo preklic članstev po mesecih opazimo vzorec, in sicer če je mesec
-vpisa januar jih največ prekliče septembra. Torej po 8 mesecih, kar je opazen 
-vzorec tudi pri vseh ostaih mesecih.
-
-```{r}
-# Status kartičarja
-
-Customer_Loyalty_History %>%
-  group_by(`Loyalty Card`) %>%
-  summarise(
-    customers = n(),
-    churned = sum(Churn),
-    `churn rate` = mean(Churn) * 100
-  )
-```
-
-Pri stopnjah kartičarjev opazimo, da jih je največ odšlo iz skupine `Star` kar
-je tudi pričakovano, saj jih je tam največ ima pa najniżji `Churn rate`.
-Najvišji `Churn rate` opazimo pri skupini `Aurora`.
-
-```{r}
-Customer_Loyalty_History %>%
-  group_by(Gender) %>%
-  summarise(
-    customers = n(),
-    churned = sum(Churn),
-    `churn rate` = mean(Churn) * 100
-  )
-```
-
-Pri spremenljivki spol ne opazimo velikih odstopanj.
-
-## Napovedovanje odliva strank
-
-Po pregledu literature najpogosteje omenjajo da so pomembni trije sklopi,
-in sicer:\
-1. Demografske značilnosti - v našem primeru:
-`Gender`, `Education`, `Marital Status`, `Province`
-2. Uporabniške oz vedenjske značilnosti - našem primeru:
-`Flights Booked`, `Total Flights`, `Distance`
-3. Finančne oz. vrednostne značilnosti. - našem primeru:
-`CLV`, `Salary`
-
-Literatura tudi poudarja, da za napovedovanje, ne smemo uporabiti informacij,
-ki so nastale po odhodu. Napaka, ki jo bi z uporabo informacij po odhodu dobili
-se  imenuje *angl. data leakage*.
-Zato je potrbno definirati *angl. prediction point*.
+da večina kartičarjev odide po 1 letu. Največ kartičarjev je zapustilo program 
+zvestobe v letu 2015.
+Opazimo tudi da se povečuje delež kartičarjev, ki odidejo v istem letu kot so
+se včlanili.
+Za vpisane v program zvestobe v letu 2018 pa je nekoliko problematično za 
+neposredno primerjavo, saj ne vemo ali so osebe vpisane v članstvo odšle po 1 
+letu. 
 
 ### Čas odhoda v mesecih
 
 ```{r}
-Customer_Loyalty_History <- Customer_Loyalty_History %>%
+CLH_Churn <- CLH_Churn %>%
   mutate(
     `tenure months` = (`Cancellation Year` - `Enrollment Year`) * 12 +
                     (`Cancellation Month` - `Enrollment Month`)
   )
 ```
 
-V podatkovno tabelo smo dodali novo spremenljivko `tenture months`, ki ponazarja
+V podatkovno tabelo smo dodali novo spremenljivko `tenure months`, ki ponazarja
 kolikšna je razlika v mesecih med odhodom iz članstva in mesecih vstopa v
 članstvo.
 
-```{r}
-Customer_Loyalty_History %>%
-  filter(!is.na(tenure_months)) %>%
-  summarise(
-    mean = mean(tenure_months),
-    median = median(tenure_months),
-    min = min(tenure_months),
-    max = max(tenure_months)
-  )
+```{r message=FALSE}
+CLH_Churn %>%
+  filter(!is.na(`tenure months`)) %>%
+  mutate(
+    `tenure_group` = if_else(`tenure months` > 36, "36+", as.character(`tenure months`)),
+    `tenure_group` = factor(`tenure_group`, levels = c(0:36, "36+"))
+  ) %>%
+  ggplot(aes(x = `tenure_group`)) +
+  geom_bar() +
+  labs(
+    title = "Churned customers by number of months",
+    x = "Number of months in loyalty program",
+    y = "Number of churned customers",
+    fill = "Cancellation month"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Po izračunih smo ugotovili, da v povpračju tisti člani, ki zapustijo zapustijo
-v 16 mesecih, medijana se nahaja znotraj 8 mesecev. Maksimalno pa je kartičar
-ostal 71 mesecev. Dobro se zavedati, da so to samo okvirne vrednosti glede na
-podatke in s tem leti s katerimi razpolagamo.
+Glede na zanimive razultate pri preklicu programa zvestobe po letih, nas je 
+zanimalo ali opazimo vzorec tudi po mesecih.
+Zgornji grafikon prikazuje po koliko mesecih so stranke odšle iz programa 
+zvestobe. V podatkih je opazen izrazitejši vrh odpovedi približno osem mesecev 
+po včlanitvi.
+Manjši skok je viden pri zadnjem stolpcu, ki prikazuje agregirano število 
+izstopov iz programa zvestobe. Podatke za zadnji stolpec smo agregirali zaradi
+večje preglednosti grafikona, sicer so vrednosti dokaj enakomerno porazdeljene 
+po mesecih.
 
-## Dodaten pregled podatkov
+## Ugotovitve eksploratorne analize
 
-Za napovedovanje potrebujemo agregirano podatkovno tabelo po kartičarjih. 
-Predhodno smo že očistili oz. uredili podatkovni tabeli zato bomo sedaj združili.
+Na podlagi eksploratorne analize so največje razlike med strankami, ki so 
+članstvo preklicale, in tistimi, ki so v programu ostale, opazne pri 
+spremenljivkah, ki odražajo njihovo aktivnost. Stranke z večjim številom letov, 
+večjo preleteno razdaljo in večjim številom pridobljenih oziroma unovčenih točk 
+se med skupinama razlikujejo bolj izrazito kot glede na demografske značilnosti, 
+kot so spol, izobrazba ali zakonski stan.
 
-```{r}
-# Združitev obeh podatkovnih tabel
+Med spremenljivkami, povezanimi z aktivnostjo, so prisotne tudi močne pozitivne 
+korelacije. To je pričakovano, saj večja letalska aktivnost praviloma pomeni 
+večjo preleteno razdaljo ter posledično večje število pridobljenih točk. Hkrati 
+je ta ugotovitev pomembna za nadaljnje modeliranje, saj lahko močno korelirane 
+spremenljivke vsebujejo redundantne informacije in povzročijo težave pri 
+interpretaciji modela.
 
-merged <- Customer_Loyalty_History %>%
-  left_join(Customer_Flight_Activity_Clean, by = "Loyalty Number")
+Pri unovčevanju točk je opazna povezava med večjo uporabo zbranih točk in večjim 
+vztrajanjem v programu. To lahko nakazuje, da aktivna uporaba ugodnosti programa 
+prispeva k večji angažiranosti članov. Vendar na podlagi eksploratorne analize 
+še ne moremo sklepati o vzročnem vplivu, zato bo to povezavo smiselno preveriti 
+tudi z napovednim modelom.
 
-```
+Časovna analiza dodatno kaže, da se velik del odpovedi pojavi relativno kmalu po 
+včlanitvi. Pri tem je posebej zanimivo obdobje prvih mesecev članstva, zato je 
+lahko zgodnja aktivnost stranke pomemben dejavnik pri napovedovanju kasnejšega 
+churn-a. Pri interpretaciji strank, včlanjenih proti koncu opazovalnega obdobja, 
+je potrebna previdnost, saj zanje nimamo enako dolgega obdobja spremljanja.
 
-Dobili smo tabelo "merged", ki je longitudinalna tabela torej 1 kartičar x več
-mesecev. Za napovedovanje pa želimo, da posamezna vrstica predstavlja 
-posameznega karičarja.
+Na podlagi teh ugotovitev se kot ena izmed možnih zadrževalnih strategij kaže 
+usmerjanje ukrepov predvsem v manj aktivne oziroma nove člane. Letalsko podjetje 
+bi lahko na primer ponudilo dodatne točke ali druge ugodnosti članom, ki v prvih 
+mesecih po včlanitvi ne izkazujejo aktivnosti. Namen takšnega ukrepa bi bil 
+povečati uporabo programa, spodbuditi nadaljnje letenje in povečati verjetnost 
+dolgoročnega vztrajanja v programu.
 
-```{r eval=FALSE, include=FALSE}
-# Samo osnovni pregled podatkov
 
-dim(merged)
+## Napovedovanje odliva strank
 
-names(merged)
-
-merged %>%
-  count(`Loyalty Number`) %>%
-  summarise(
-    min_records = min(n),
-    median_records = median(n),
-    mean_records = mean(n),
-    max_records = max(n)
-  )
-
-merged %>%
-  count(`Loyalty Number`, Year, Month) %>%
-  filter(n > 1)
-
- merged %>%
-    filter(is.na(Year)) %>%
-   select(`Loyalty Number`, Year, Month, date)
- 
- merged %>%
-     filter(`Loyalty Number` == 736504) %>%
-     t()
-```
-
-Opazili smo, da je stranka z `Loyalty Number` = 736504 se včlanila v program 
-zvestobe septembra 2012, vendar v podatkovni bazi Customer Flight Activity 
-zanjo ni zabeležena nobena letalska aktivnost ali da bi izstopil iz programa 
-zvestobe. Zdi se, da manjkajoče vrednosti odražajo odsotnost zabeležene 
-dejavnosti in ne napačno vrednost.
-
-Pred modeliranjem odliva strank je potrebno definirati tako imenovani 
-**angl. prediction point**. \
-Pogledali bomo kdaj se odliv dejansko zgodi glede na mesečno aktivnost.
+Za potrebe napovedovanja smo longitudinalno tabelo merged, v kateri je za 
+posameznega kartičarja zabeležena največ ena vrstica za posamezen mesec, 
+preoblikovali na raven posameznega kartičarja. Ker je ciljna spremenljivka Churn 
+definirana na ravni kartičarja, mora tudi modelna podatkovna tabela vsebovati 
+eno vrstico za vsakega kartičarja. Mesečne podatke o letalski aktivnosti smo 
+zato agregirali.
 
 ```{r}
-merged %>%
-  filter(Churn == 1) %>%
+model_data <- merged %>%
   group_by(`Loyalty Number`) %>%
   summarise(
-    `last activity` = max(date, na.rm = TRUE),
-    `cancellation year` = first(`Cancellation Year`),
-    `cancellation month` = first(`Cancellation Month`)
-  ) %>%
-  head()
-```
-
-Najprej preverimo, ali je pri churniranih strankah aktivnost prisotna po 
-datumu *cancellation*.
-
-```{r echo=FALSE}
-merged %>%
-  filter(
-    Churn == 1,
-    !is.na(`Cancellation Year`),
-    !is.na(`Cancellation Month`),
-    (Year > `Cancellation Year`) |
-    (Year == `Cancellation Year` & Month > `Cancellation Month`)
-  ) %>%
-  summarise(n = n())
-```
-
-Imamo 33.988 zapisov aktivnosti po *cancellation* datumu. To pomeni, da 
-`Cancellation Year`/`Month` in mesečna aktivnost očitno nista neposredno 
-usklajena oziroma `Cancellation` ne pomeni nujno, da se aktivnost po tem datumu 
-konča.
-
-```{r}
-merged %>%
-  group_by(Churn) %>%
-  summarise(
-    customers = n_distinct(`Loyalty Number`),
-    rows = n()
+    
+    # ciljna spremenljivka
+    Churn = first(Churn),
+    
+    # demografske značilnosti
+    Gender = first(Gender),
+    Education = first(Education),
+    Salary = first(Salary),
+    `Marital Status` = first(`Marital Status`),
+    
+    # značilnosti programa zvestobe
+    `Loyalty Card` = first(`Loyalty Card`),
+    `Enrollment Type` = first(`Enrollment Type`),
+    `Enrollment Year` = first(`Enrollment Year`),
+    CLV = first(CLV),
+    
+    # skupna aktivnost
+    total_flights = sum(`Total Flights`, na.rm = TRUE),
+    total_distance = sum(Distance, na.rm = TRUE),
+    total_points_accumulated = sum(`Points Accumulated`, na.rm = TRUE),
+    total_points_redeemed = sum(`Points Redeemed`, na.rm = TRUE),
+    total_dollar_redeemed = sum(`Dollar Cost Points Redeemed`, na.rm = TRUE),
+    
+    # povprečna mesečna aktivnost
+    mean_monthly_flights = mean(`Total Flights`, na.rm = TRUE),
+    mean_monthly_distance = mean(Distance, na.rm = TRUE),
+    mean_monthly_points = mean(`Points Accumulated`, na.rm = TRUE),
+    
+    .groups = "drop"
   )
 ```
 
+
+Poleg absolutnega števila unovčenih točk smo oblikovali tudi relativni kazalnik 
+redemption_rate, ki predstavlja delež akumuliranih točk, ki jih je stranka 
+unovčila. S tem smo želeli razlikovati med strankami z različno intenzivnostjo 
+zbiranja točk, saj enako število unovčenih točk nima enakega pomena pri stranki, 
+ki je zbrala malo oziroma veliko točk.
 ```{r}
-merged %>%
-  distinct(`Loyalty Number`, Churn, `Cancellation Year`, `Cancellation Month`) %>%
-  count(Churn)
-```
------------------
-Za nadaljno analizo odstranimo vse podatke od preklica naprej,
-saj za napovedovanje odhoda strank po priporočilih literature ni dobro
-vzemarti podatke po preklicu, saj nastane napaka *data leakage*.
-
-```{r}
-
-merged_clean <- merged %>%
-  # 1. korak: Sestavimo dejanski datum aktivnosti (vzamemo 1. dan v mesecu)
-  mutate(Activity_Date = make_date(`Year`, `Month`, 1)) %>%
-  
-  # 2. korak: Sestavimo datum preklica 
-  mutate(Cancellation_Date = make_date(`Cancellation Year`, `Cancellation Month`, 1)) %>%
-  
-  # 3. korak: Obdržimo samo aktivnosti PRED ali NA datum preklica, 
-  # ter seveda vse tiste stranke, ki sploh nimajo datuma preklica (so še aktivne)
-  filter(is.na(Cancellation_Date) | Activity_Date <= Cancellation_Date)
-
-# Preverimo, koliko vrstic smo dejansko odstranili
-nrow(merged) - nrow(merged_clean)
+model_data <- model_data %>%
+  mutate(
+    redemption_rate = if_else(
+      total_points_accumulated > 0,
+      total_points_redeemed / total_points_accumulated,
+      0
+    )
+  )
 ```
 
 
+```{r}
+glimpse(model_data)
+summary(model_data)
+
+model_data %>%
+  count(Churn) %>%
+  mutate(
+    percentage = round(n / sum(n) * 100, 2)
+  )
+```
+
+V vzorcu je delež strank, ki so preklicale članstvo, približno 12 %, zato je 
+ciljna spremenljivka neuravnotežena. To je pomembno pri vrednotenju modela, saj 
+sama klasifikacijska točnost (accuracy) v takem primeru ni zadostna metrika. 
+Model, ki bi vse stranke uvrstil med neodšle, bi namreč dosegel relativno visoko 
+accuracy, vendar ne bi identificiral nobene stranke, ki bo program zapustila.
+
+Pretvorimo kategorične spremenljivke v faktorje
+```{r}
+model_data <- model_data %>%
+  mutate(
+    Gender = factor(Gender),
+    Education = factor(Education),
+    `Marital Status` = factor(`Marital Status`),
+    `Loyalty Card` = factor(`Loyalty Card`),
+    `Enrollment Type` = factor(`Enrollment Type`)
+  )
+
+lapply(
+  model_data[c(
+    "Gender",
+    "Education",
+    "Marital Status",
+    "Loyalty Card",
+    "Enrollment Type"
+  )],
+  levels
+)
+```
+
+Pred modeliranjem smo preverili prisotnost manjkajočih vrednosti. Ker logistična 
+regresija zahteva popolne vrednosti uporabljenih spremenljivk, smo iz analize 
+izločili enote z manjkajočimi vrednostmi.
+
+```{r}
+model_data_complete <- model_data %>%
+  drop_na()
+```
+
+Podatke smo razdelili na 70 % učno in 30 % testno množico. Model je bil ocenjen 
+izključno na učni množici, njegova napovedna uspešnost pa je bila nato 
+preverjena na testni množici, ki pri ocenjevanju modela ni bila uporabljena. S 
+tem zmanjšamo tveganje, da bi ocena uspešnosti temeljila na podatkih, na katerih 
+je bil model naučen.
+
+```{r}
+train_index <- sample(
+  seq_len(nrow(model_data_complete)),
+  size = 0.70 * nrow(model_data_complete)
+)
+
+train_data <- model_data_complete[train_index, ]
+test_data <- model_data_complete[-train_index, ]
+```
+
+```{r}
+logit <- glm(
+  Churn ~
+    Gender +
+    Education +
+    Salary +
+    `Marital Status` +
+    `Loyalty Card` +
+    `Enrollment Type` +
+    `Enrollment Year` +
+    CLV +
+    total_flights +
+    total_points_redeemed +
+    redemption_rate,
+  data = train_data,
+  family = binomial
+)
+
+summary(logit)
+```
+
+```{r}
+test_data <- test_data %>%
+  mutate(
+    predicted_probability = predict(
+      logit,
+      newdata = test_data,
+      type = "response"
+    )
+  )
+
+test_data <- test_data %>%
+  mutate(
+    predicted_class = if_else(
+      predicted_probability >= 0.5,
+      1,
+      0
+    )
+  )
+```
+
+
+```{r}
+conf_matrix <- table(
+  Actual = test_data$Churn,
+  Predicted = test_data$predicted_class
+)
+
+conf_matrix
+```
+```{r}
+TN <- conf_matrix["0", "0"]
+FP <- conf_matrix["0", "1"]
+FN <- conf_matrix["1", "0"]
+TP <- conf_matrix["1", "1"]
+
+accuracy <- (TP + TN) / sum(conf_matrix)
+
+sensitivity <- TP / (TP + FN)
+
+specificity <- TN / (TN + FP)
+
+precision <- TP / (TP + FP)
+
+F1 <- 2 * precision * sensitivity / 
+  (precision + sensitivity)
+
+c(
+  Accuracy = accuracy,
+  Sensitivity = sensitivity,
+  Specificity = specificity,
+  Precision = precision,
+  F1 = F1
+)
+```
+
+Na testnem vzorcu je logistični model dosegel 90,76 % točnost napovedi 
+(accuracy). Vendar sama točnost v primeru napovedovanja churn-a ni zadostna za 
+oceno uspešnosti modela, saj je delež strank, ki odpovejo članstvo, relativno 
+majhen.
+
+Model je dosegel zelo visoko specifičnost (97,43 %), kar pomeni, da zelo uspešno 
+prepoznava stranke, ki članstva ne bodo odpovedale. Po drugi strani je 
+občutljivost (sensitivity) precej nižja in znaša 44,84 %. Model tako pravilno 
+prepozna približno 45 % strank, ki dejansko odpovejo članstvo, medtem ko 
+približno 55 % churniranih strank ne prepozna.
+
+Precision znaša 71,72 %, kar pomeni, da je med strankami, ki jih model označi 
+kot potencialno odhajajoče, približno 72 % dejansko takšnih, ki odpovejo 
+članstvo. F1-vrednost 55,18 % kaže na zmerno ravnotežje med precision in 
+sensitivity.
+
+Rezultati kažejo, da je model precej uspešnejši pri prepoznavanju strank, ki 
+bodo ostale v programu, kot pri identificiranju strank z dejanskim tveganjem za 
+churn. Ker je namen modela podpora ukrepom za zadržanje strank, bi bilo zato 
+smiselno preveriti tudi druge klasifikacijske pragove. Prag 0,5 je namreč lahko 
+preveč strog, zaradi česar model spregleda precejšen delež potencialno 
+odhajajočih strank.
