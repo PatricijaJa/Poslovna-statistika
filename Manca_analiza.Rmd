@@ -1,62 +1,204 @@
+---
+title: "Projekt "
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 999)
+pdf.options(family = "ArialMT")
+```
+
+```{r knjiznice, include=FALSE}
+library(readr)
+library(patchwork)
+library(DataExplorer)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+library(tinytex)
+library(tidyverse)
+library(lubridate)
+library(skimr)
+library(kableExtra)
+library(forcats)
+library(missForest)
+library(missRanger)
+library(factoextra)
+library(dplyr)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
+```
+
+```{r}
+kable(summary(Customer_Flight_Activity))
+```
+
+
+```{r}
+# brez teh
+exclude_cols <- c("Loyalty Number", "Month", "Year")
+
+# numerični
+cols_to_log <- Customer_Flight_Activity %>%
+  select(where(is.numeric), -any_of(exclude_cols)) %>%
+  names()
+
+Customer_Flight_Activity_Log <- Customer_Flight_Activity %>%
+  mutate(across(all_of(cols_to_log), ~ log(.x)))
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
+```
+
+```{r}
+kable(summary(Customer_Loyalty_History))
+```
+
+```{r}
+# negativne vrednosti v Salary z NA
+Customer_Loyalty_History <- Customer_Loyalty_History %>%
+  mutate(Salary = if_else(Salary < 0, NA_real_, Salary))
+
+# izključi
+exclude_cols <- c("Loyalty Number", "Postal Code", "Loyalty Card", "Enrollment Year",
+                  "Enrollment Month", "Cancellation Year", "Cancellation Month")
+
+cols_to_log <- Customer_Loyalty_History %>%
+  select(where(is.numeric), -any_of(exclude_cols)) %>%
+  names()
+
+# log
+Customer_Loyalty_History_Log <- Customer_Loyalty_History %>%
+  mutate(across(all_of(cols_to_log), ~ log(.x)))
+```
+
+
+
+```{r}
+## Podvojene vrstice v Customer_Flight_Activity
+key_cols <- c("Loyalty Number", "Year", "Month")
+
+# Za vsako skupino preveri velikost skupine in št. dejansko različnih vrstic znotraj nje
+key_dup_summary <- Customer_Flight_Activity %>%
+  group_by(across(all_of(key_cols))) %>%
+  summarise(
+    group_size        = n(),
+    n_distinct_rows    = n_distinct(pick(everything())),
+    .groups = "drop"
+  ) %>%
+  filter(group_size > 1)
+
+# Ključi, kjer je skupina POPOLN dvojnik
+full_dup_keys <- key_dup_summary %>%
+  filter(n_distinct_rows == 1) %>%
+  select(all_of(key_cols))
+
+# Ključi, kjer skupina NI popoln dvojnik
+partial_dup_keys <- key_dup_summary %>%
+  filter(n_distinct_rows > 1) %>%
+  select(all_of(key_cols))
+
+nrow(full_dup_keys)
+nrow(partial_dup_keys)
+
+# Vpogled v primer nepopolnih dvojnikov
+Customer_Flight_Activity %>%
+  semi_join(partial_dup_keys, by = key_cols) %>%
+  arrange(`Loyalty Number`, Year, Month) %>%
+  head(10)
+```
+
+
+```{r}
+# Nepopolni dvojniki = odstranimo vse
+# Popolni dvojniki = odstranimo odvečne kopije
+
+Customer_Flight_Activity_Clean <- Customer_Flight_Activity %>%
+  anti_join(partial_dup_keys, by = key_cols) %>%
+  distinct()
+
+# Poročilo o čiščenju
+n_total            <- nrow(Customer_Flight_Activity)
+n_removed_partial  <- Customer_Flight_Activity %>% semi_join(partial_dup_keys, by = key_cols) %>% nrow()
+n_removed_full_dup <- n_total - n_removed_partial - nrow(Customer_Flight_Activity_Clean)
+
+cat("Vrstic prej:", n_total, "\n")
+cat("Odstranjenih (nepopolni dvojniki - vse vrstice skupine):", n_removed_partial, "\n")
+cat("Odstranjenih (odvečne kopije popolnih dvojnikov):", n_removed_full_dup, "\n")
+cat("Vrstic po čiščenju:", nrow(Customer_Flight_Activity_Clean), "\n")
+
+# Kontrola = noben ključ naj se več ne podvaja
+Customer_Flight_Activity_Clean %>% count(across(all_of(key_cols))) %>% filter(n > 1)
+```
+
+```{r}
+Customer_Activity <- Customer_Flight_Activity_Clean %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    total_flights_sum    = sum(`Total Flights`, na.rm = TRUE),
+    total_distance       = sum(Distance, na.rm = TRUE),
+    points_accumulated   = sum(`Points Accumulated`, na.rm = TRUE),
+    points_redeemed      = sum(`Points Redeemed`, na.rm = TRUE),
+    dollar_cost_redeemed = sum(`Dollar Cost Points Redeemed`, na.rm = TRUE),
+    active_months        = n_distinct(paste(Year, Month)),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    redemption_rate       = if_else(points_accumulated > 0,
+                                     points_redeemed / points_accumulated, 0),
+    avg_flights_per_month = total_flights_sum / active_months
+  )
+
+df <- Customer_Loyalty_History %>%
+  left_join(Customer_Activity, by = "Loyalty Number") %>%
+  mutate(
+    is_promo_2018 = `Enrollment Type` == "2018 Promotion",
+    churned = !is.na(`Cancellation Year`)
+  )
+
+dt <- Customer_Flight_Activity_Clean %>%
+  left_join(Customer_Loyalty_History, by = "Loyalty Number") %>%
+  mutate(
+    redemption_rate = if_else(`Points Accumulated` > 0,
+                                     `Points Redeemed` / `Points Accumulated`, 0))
+
+dt$tenure_months <- (dt$Year - dt$`Enrollment Year`) * 12 + 
+                     (dt$Month - dt$`Enrollment Month`) + 1
+
+wtf <- dt %>% filter(tenure_months <0)
+count(distinct(wtf, `Loyalty Number`))
+```
+
+
+
+
+
 # (Manca) Razumeti dejavnike, ki vplivajo na vključenost v program zvestobe, in analizirati učinkovitost promocijske kampanje
 
 ## 1. Dejavniki angažiranja: večdimenzionalne koristi in heterogenost uporabnikov
 
-Angažiranje v programih zvestobe poganja več vrst koristi, od denarne
-prihranke, raziskovanja, zabave do prepoznave in socialne koristi
-(Mimouni-Chaabane & Volle, 2009). Denarni prihranki so sicer najpomembnejši
-motivator za vključitev, vendar hedonske in simbolne koristi postanejo
-ključne za dolgoročno ohranjanje odnosa (Dorotic, Bijmolt & Verhoef, 2011).
-Še pomembneje je, da se odziv na program bistveno razlikuje glede na
-začetno raven porabe, saj težki kupci ne spreminjajo vedenja, medtem ko
-lahki in zmerni kupci postopoma povečujejo pogostost nakupov in zvestobo
-(Liu, 2007). Ta heterogenost je ključna za načrtovanje kampanj, ker enaka
-spodbuda ne bo enako učinkovita pri vseh segmentih. Verhoef (2003) dodaja,
-da čustvena zavezanost deluje kot posrednik med zaznanimi koristmi in
-dejanskim vedenjem, zato promocijske kampanje ne smejo ciljati le na
-kratkoročne ekonomske spodbude, temveč morajo graditi tudi čustveno
-povezanost.
+Razumevanje dejavnikov, ki vplivajo na vključenost in delovanje strank v programih zvestobe, zahteva celovit pogled na zaznane koristi, ki jih programi ponujajo. Mimouni-Chaabane in Volle (2009) povdarjajo pet vrst koristi, in sicer denarno, raziskovalno, zabavno, prepoznavno in socialno. Pri tem je pomembno omeniti, da denarni prihranki veljajo za najpomembnejši motivator, vendar se ne sme spregledati hedonskih in simbolnih koristi, ki za dolgoročno vključenost postanejo vse pomembnejše. Dorotic, Bijmolt in Verhoef (2011) to dopolnjujejo z ugotovitvijo, da se pomen koristi po vključitvi v program spreminja, saj so utilitarne koristi ključne za privabljanje novih članov, hedonske in simbolne koristi pa so pomembnejše za zadrževanje članov skozi čas. Poleg tega Liu (2007) dokazuje, da se odziv na program zvestobe bistveno razlikuje glede na začetno raven porabe strank. Težki kupci se sicer najbolj poslužujejo nagrad, vendar ne spreminjajo svojega vedenja, medtem ko lahki in zmerni kupci postopoma povečujejo pogostost nakupov in zvestobo. Ta heterogenost je ključnega pomena pri načrtovanju promocijskih kampanij, saj enaka spodbuda ne bo enako učinkovita pri vseh strankah. Verhoef (2003) dodaja, da čustvena zavezanost deluje kot posrednik med zaznanimi koristmi in dejanskim vedenjem, in s tem svetuje, da morajo kampanije graditi tudi čustveno povezanost s podjetjem, ne le ciljati na kratkoročne ekonomske spodbude.
+
 
 ## 2. Psihološki mehanizmi in vpliv dizajna programa na učinkovitost kampanj
 
-Učinkovitost promocijskih kampanj je odvisna od razumevanja treh sočasno
-delujočih psiholoških mehanizmov, in sicer statusa, navade in odnosa
-(Henderson, Beck & Palmatier, 2011). Kampanja, ki temelji na enem mehanizmu
-(npr. statusu), lahko pri enem segmentu spodbudi angažiranje, pri drugem pa
-povzroči negativne učinke (občutek nepravičnosti). Dorotic, Bijmolt in
-Verhoef (2011) izpostavljata mehanizma "pritisk točk" (kratkoročno
-pospeševanje nakupov pred nagrado) in "nagrajeno vedenje" (dolgoročna
-sprememba navad). Liu (2007) ugotavlja, da se največja sprememba vedenja
-zgodi v prvih treh mesecih po vključitvi, kar pomeni, da so začetne
-promocijske kampanje ključne za vzpostavitev novih nakupnih navad. Verhoef
-(2003) nadalje dokazuje, da neposredna pošta vpliva na rast deleža stranke,
-ne pa na zadrževanje, saj orodja, učinkovita za en cilj, niso nujno
-primerna za drugega.
+Učinkovitost promocijskih kampanj je odvisna od razumevanja treh sočasno delujočih psiholoških mehanizmov, ki poganjajo vedenje potrošnikov. Henderson, Beck in Palmatier (2011) identificirajo tri ključne mehanizme (status, navado in odnos), ki delujejo sočasno in medsebojno vplivajo drug na drugega.Promocijska kampanja, ki temelji izključno na enem mehanizmu (npr. statusu preko ekskluzivnih nagrad), lahko spodbudi angažiranje pri enem segmentu, hkrati pa povzroči negativne učinke pri drugih (npr. občutek nepravičnosti ali zmanjšanje notranje motivacije). Dorotic, Bijmolt in Verhoef (2011) dodajajo mehanizma pritiska točk in nagrajenega vedenja kot odgovorna za kratkoročne in dolgoročne učinke programov. Kratkoročni učinki so značilni predvsem za časovno omejene promocije, medtem ko dolgoročni učinki zahtevajo premišljeno oblikovanje programa, ki nagrajuje rednost in zvestobo skozi daljše obdobje. Liu (2007) potrjuje, da se največja sprememba v vedenju zgodi v prvih treh mesecih po vključitvi v program, kar nakazuje, da so začetne promocijske kampanje ključnega pomena, saj morajo stranke v tem obdobju zaznati dovolj vrednosti, da razvijejo nove nakupne navade.
+
 
 ## 3. Ključni dejavniki za oceno efektivnosti promocijskih kampanj
 
-Pri analizi efektivnosti kampanj je treba upoštevati več kritičnih
-dejavnikov. Prvič, samoizbira, kjer so stranke, ki se vključijo v program,
-pogosto že bolj zveste, zato primerjava med člani in nečlani precenjuje
-učinke; nujna je longitudinalna analiza iste skupine pred in po kampanji
-(Dorotic, Bijmolt & Verhoef, 2011; Verhoef, 2003). Drugič, konkurenčna
-nasičenost zmanjšuje učinkovitost, saj morajo kampanje iskati edinstvene
-vrednostne predloge, kot so ne-denarne koristi (prepoznava, ekskluzivni
-dogodki), ki jih konkurenca težko posnema (Mimouni-Chaabane & Volle, 2009).
-Tretjič je časovni okvir, ker kratkoročni učinki ne odražajo dolgoročne
-učinkovitosti, saj se trajne spremembe pri lahkih in zmernih kupcih
-pokažejo šele po več mesecih (Liu, 2007; Henderson, Beck & Palmatier,
-2011). Nazadnje, preteklo vedenje pojasni večino variance (okoli 90 %),
-zato je treba realno oceniti pričakovane učinke, kjer je največji
-potencial za rast v segmentih lahkih in zmernih kupcev, ne v težkih, ki so
-že dosegli svoj maksimum (Verhoef, 2003).
+Pri analizi efektivnosti promocijskih kampanj je nujno upoštevati več ključnih dejavnikov, ki lahko bistveno vplivajo na interpretacijo rezultatov. Prvič, samoizbira je kritićen dejavnik, saj so stranke, ki se vključijo v program, pogosto že bolj zveste, zato primerjava med člani in nečlani programa vodi v precenjevanje učinkovitosti (Dorotic, Bijmolt & Verhoef, 2011; Verhoef, 2003). Za zanesljivo oceno učinkovitosti promocijske kampanje je zato nujna longitudinalna analiza iste skupine strank pred in po izvedbi kampanje, kot to priporočata tako Liu (2007) kot Verhoef (2003). Drugič, konkurenčni programi in nasičenost trga zmanjšujejo učinkovitost posameznega programa, saj se v okolju, kjer imajo vsi ponudniki podobne programe zvestobe, diferenciacija hitro izgubi. Ppromocijske kampanje morajo tako iskati edinstvene vrednostne predloge, ki jih konkurenca ne more enostavno posnemati (Mimouni-Chaabane & Volle, 2009; Dorotic, Bijmolt & Verhoef, 2011). Tretjič, časovni okvir ocenjevanja je ključen, saj kratkoročni učinki promocijskih kampanj ne odražajo nujno dolgoročne učinkovitosti. Liu (2007) dokazuje, da se dolgoročni učinki pri lahkih in zmernih kupcih pokažejo šele po več mesecih, kar pomeni, da mora ocena efektivnosti kampanje vključevati dovolj dolgo obdobje spremljanja. 
 
-> **Claude:** Teoretični okvir se lepo poveže z analizo spodaj. V
-> nadaljevanju sem na več mestih dodal(a) kratke opombe in dodatne
-> analize, ki eksplicitno navežejo ugotovitve na zgornjo teorijo (Liu,
-> 2007; Verhoef, 2003; Dorotic et al., 2011; Henderson et al., 2011;
-> Mimouni-Chaabane & Volle, 2009). Vsi moji dodatki so označeni z besedo
-> "Claude", da jih ločiš od izvirnega besedila in R kode.
+
 
 ## Učinkovitost 2018 promocije
 
@@ -66,7 +208,7 @@ potencial za rast v segmentih lahkih in zmernih kupcev, ne v težkih, ki so
 ## -------------------------------------------------------------------------
 
 # Opisna statistika po skupinah
-df %>%
+t1 <- df %>%
   group_by(`Enrollment Type`) %>%
   summarise(
     n = n(),
@@ -80,15 +222,32 @@ df %>%
     churn_rate     = mean(churned, na.rm = TRUE)
   )
 
+# Transponiranje
+t1_transponirano <- t1 %>%
+  pivot_longer(cols = -`Enrollment Type`, names_to = "Metrika", values_to = "Vrednost") %>%
+  pivot_wider(names_from = `Enrollment Type`, values_from = "Vrednost")
+
+kbl(t1, booktabs = TRUE, caption = "Povprečja", digits = c(0,0,0,0,1,1,1,3,1,3),
+   align = "cc", row.names = FALSE) %>%
+   kable_styling(latex_options = c("striped", "hold_position"), stripe_color = "gray!15") %>%
+  column_spec(1, bold = TRUE, color = "black")
+```
+
+```{r}
 # Statistični test: CLV med Standard in 2018 Promotion (Wilcoxon, ker CLV ni nujno normalno porazdeljen)
 wilcox.test(CLV ~ `Enrollment Type`, data = df)
 
-# t-test za primerjavo povprečnega števila poletov
-t.test(total_flights_sum ~ `Enrollment Type`, data = df)
-
 # Chi-kvadrat: ali je tip kartice povezan z enrollment type?
 chisq.test(table(df$`Enrollment Type`, df$`Loyalty Card`))
+chisq.test(table(df$`Enrollment Type`, df$Province))
+chisq.test(table(df$`Enrollment Type`, df$Salary))
 
+chisq.test(table(df$`Enrollment Type`, df$Gender))
+chisq.test(table(df$`Enrollment Type`, df$`Marital Status`))
+chisq.test(table(df$`Enrollment Type`, df$Education))
+
+# t-test za primerjavo povprečnega števila poletov
+t.test(total_flights_sum ~ `Enrollment Type`, data = df)
 
 # Testi razlik med skupinama
 wilcox.test(points_accumulated ~ `Enrollment Type`, data = df)
@@ -96,233 +255,169 @@ wilcox.test(points_redeemed ~ `Enrollment Type`, data = df)
 wilcox.test(redemption_rate ~ `Enrollment Type`, data = df)
 ```
 
-Na prvi pogled nam opisna statistika pokaže, da je promocija iz leta 2018
-privabila 971 novih članov, ki so v obstoju naročnine leteli v povprečju
-kar 45-krat, medtem ko so normalne stranke letele le 29-krat v povprečju.
-Zelo hitro je jasno, da je promocija pripeljala stranke, ki so bolj
-pogosti uporabniki letalskih družb, kot standardno pridobljeni kartičarji.
+```{r}
+ggplot(df, aes(x = `Enrollment Type`, y = CLV, fill = `Enrollment Type`)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "CLV glede na tip vpisa",
+       y = "Customer Lifetime Value", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
 
-Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko)
-kažejo naslednje rezultate. Stranke, ki so se vključile preko promocije,
-so v opazovanjem obdobju v povprečju opravile skoraj 17 letov več od
-standardno vpisanih strank. Ta razlika je statistično visoko značilna,
-saj Welchov t-test vrne rezultate t = 24.987 in p-value < 2.2e-16.
-Povprečni vrednosti vidni v tabeli pa sta za promocijsko skupino 45.8 in
-za standardno skupino 28.9.
+ggplot(df, aes(x = `Loyalty Card`, fill = `Enrollment Type`)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Vrsta kartice zvestobe glede na tip vpisa",
+       y = "Število članov", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-Po drugi strani pa se CLV (customer lifetime value) med skupinama
-praktično ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302
-in p-value = 0.8432. Promocija torej ni pritegnila strank z višjo
-dolgoročno vrednostjo, temveč zgolj bolj aktivne letalce.
+ggplot(df, aes(x = `Enrollment Type`, y = Salary, fill = `Enrollment Type`)) +
+  geom_boxplot(outlier.alpha = 0.3) +
+  labs(title = "Plača glede na tip vpisa",
+       y = "Letna plača ($)", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none")
 
-> **Claude (teoretična opomba):** Ta ugotovitev je smiselno brati skozi
-> mehanizme iz Henderson, Beck & Palmatier (2011) — promocija z bonus
-> stopnjo nabiranja točk (glej spodaj) cilja predvsem na mehanizma
-> **statusa in navade** (hitrejše kopičenje nagrad), ne pa nujno na
-> mehanizem **odnosa** (čustvena zavezanost), o katerem govori Verhoef
-> (2003). To je verjetno razlog, zakaj promocija poveča aktivnost, ne pa
-> tudi dolgoročne vrednosti (CLV) strank.
+ggplot(df, aes(x = `Enrollment Type`, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Spol glede na tip vpisa",
+       y = "Število članov", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-Na nadaljnih testih vidimo, da je zboranje in koriščenje točk visoko
-značilno med skupinama, vendar pa nam samo ta rezultat ne pove, katera
-skupina je bistveno boljša. Zato se obrnemo na tabelo s primerjavo, kjer
-opazimo, da medtem ko promocijski člani zberejo bistveno več točk
-zvestobe, so standardno včlanjeni člani tisti, ki jih več porabijo.
-Redemption rate je v povprečju pri standardnih članih 1.7%, medtem ko je
-pri promocijskih le 0.4%.
+ggplot(df, aes(x = `Enrollment Type`, fill = `Marital Status`)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Zakonski stan glede na tip vpisa",
+       y = "Število članov", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-Zato je zanimivo, da je promocija privabila stranke, ki letijo veliko, se
-pa ne ozirajo dosti na koriščenje ugodnosti, ki jih program nudi. Potrebna
-bi bila nadaljna obravnava po plačilnem razredu in izobrazbi, vendar
-sklep je, da stranke, ki veliko letijo nimajo finančnih zadržkov in jim
-tako točke zvestobe niso pomemben del programa. Morda so jim bolj važne
-druge ugodnosti, ki jih program zvestobe nudi, vendar teh podatkov pa
-žal nimamo.
+ggplot(df, aes(x = `Enrollment Type`, fill = Education)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Izobrazba glede na tip vpisa",
+       y = "Število članov", x = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
-Tip kartice zvestobe (Star/Nova/Aurora) pa ni statistično povezan s tipom
-vpisa, saj je Chi test vrnil rezultete X-squared = 0.68438 in
-p-value = 0.7102. Promocija torej ni bila bolj privlačna za določen
-segment kartic.
+```
 
-Pomembna opomba je, da ker gre za opazovalne podatke, višja aktivnost
-promocijske skupine ne pomeni nujno, da je promocija vzročno povečala
-angažiranost. Enako verjeten scenarij je samoselekcija, in sicer da so se
-bolj pogosti letalci raje odločili za vključitev preko promocije. Za bolj
-zanesljiv vzročni zaključek bi bilo treba primerjati angažiranost istih
-strank pred in po vpisu.
 
-> **Claude (dodana referenca):** Ta problem samoizbire je natanko tisto,
-> pred čimer svarita Dorotic, Bijmolt & Verhoef (2011) in Verhoef (2003)
-> — primerjava med člani in nečlani (oz. med skupinama vpisa) sistematično
-> precenjuje učinek programa, saj so vključene stranke pogosto že
-> vnaprej bolj zveste. Oba vira priporočata longitudinalno primerjavo
-> iste skupine pred in po vključitvi, kar se sklada z zgornjim sklepom.
+Opisna statistika v tabeli nam pokaže, da je promocija iz leta 2018 privabila 971 novih članov, ki so v letih 2017 in 2018 (kar imamo podatke) leteli v povprečju kar 45-krat, medtem ko so normalne stranke programa povprečno letele le 29-krat. Zelo hitro je jasno, da je promocija pripeljala stranke, ki so bolj pogosti uporabniki letalskih družb, kot standardno pridobljeni kartičarji. Omeniti je potrebno, da smo spodnje teste najprej naredili na povprečju vseh podatkov, ki smo jih imeli, čeprav smo za nekatere promocijske člane imeli vnose že kakšen mesec pred priključitvijo programu. Ker je bil to zgolj en ali dva meseca, te podatki na slednje ugotovitve statistično značilno niso vplivali, morda so vrednosti le podcenili, smo pa kasneje pri analizi upoštevali tudi to informacijo.
 
-Primerjaj v tabeli iz poglavja 4: pri Standard skupini je povp_distance =
-43.437 in povp_accumulated = 43.437 — popolnoma identično. Pri 2018
-Promotion skupini pa je povp_distance = 68.827, povp_accumulated =
-103.240, kar je natanko 1,5-kratnik. To ni naključje — nakazuje, da imajo
-promocijske stranke 1,5× množitelj točk na prevoženi km, standardne pa
-1×. To je pomembna ugotovitev za nalogo "učinkovitost promocije": pomeni,
-da promocijska kampanja verjetno ni bila zgolj marketinška (privabi nove
-člane), ampak je vključevala tudi strukturno bonus stopnjo nabiranja
-točk kot del ponudbe. To delno pojasni, zakaj promocijski člani nabirajo
-tako veliko več točk — ne le zaradi več letov, temveč tudi zaradi
-ugodnejšega razmerja točk/km.
+Testi za primerjavo skupin po načinu vpisa (standardno ali promocijsko) kažejo naslednje rezultate. Stranke, ki so se vključile preko promocije, so v opazovanjem obdobju v povprečju opravile skoraj 17 letov več od standardno vpisanih strank. Ta razlika je statistično visoko značilna, saj Welchov t-test vrne rezultate t = 24.987 in p-value < 2.2e-16. Povprečni vrednosti vidni v tabeli pa sta za promocijsko skupino 45.8 in za standardno skupino 28.9.
+
+Testi za primerjavo zbiranja in koriščenja točk glede na vrsto vpisa so visoko značilni med skupinama, vendar pa nam samo ta rezultat ne pove, katera skupina je bistveno boljša. Zato se obrnemo na tabelo s primerjavo, kjer opazimo, da medtem ko promocijski člani zberejo bistveno več točk zvestobe, so standardno včlanjeni člani tisti, ki jih več porabijo. Redemption rate je v povprečju pri standardnih članih 1.7%, medtem ko je pri promocijskih le 0.4%.
+
+Promocija je torej privabila stranke, ki letijo veliko, vendar se ne ozirajo na koriščenje finančnih ugodnosti, ki jih program nudi. Potrebna bi bila nadaljna obravnava po plačilnem razredu in izobrazbi, vendar sklep je, da stranke, ki veliko letijo nimajo finančnih zadržkov in jih tako točke zvestobe niso pomemben del programa. Morda so jim bolj važne druge ugodnosti, ki jih program zvestobe nudi, vendar teh podatkov pa žal nimamo.
+
+Po primerjavi povprečnih vrednosti opazimo, da je ri skupini normalno vključenih članov povprečno prepotovana razdalja enaka 43.437 in povprečno število zbranih točk je enako 43.437. Torej popolnoma enako. Pri skupini 2018 promocije, pa je povprečno prepotovana razdalja enaka 68.827, število zbranih točk pa je enako 103.240, kar je natanko 1,5-kratnik razdalje. To ni naključje, saj nakazuje, da dobijo promocijske stranke 1.5 točke na prevoženi km, medtem ko standardne zgolj 1 točko na km.
 
 ```{r}
-df %>%
+t2 <- df %>%
   group_by(`Enrollment Type`) %>%
   summarise(tocke_na_km = sum(points_accumulated, na.rm = TRUE) / sum(total_distance, na.rm = TRUE))
+
+kbl(t2, booktabs = TRUE, caption = "Točke na km",
+   align = "cc", row.names = FALSE) %>%
+   kable_styling(latex_options = c("striped", "hold_position"), stripe_color = "gray!15") %>%
+  column_spec(1, bold = TRUE, color = "black")
 ```
 
-To bi lepo dopolnilo odstavek o tem, zakaj promocijski člani "zberejo
-bistveno več točk, a jih manj unovčijo" — zdaj imamo razlago tudi za
-zakaj zbirajo toliko več, ne le hipotezo o vedenju.
+Ta ugotovitev deloma pojasi, zakaj promocijski člani nabirajo toliko več točk kot navadni. Promocijska kampanija ni bila le normalno oglaševanje programa, vendar je vključevalo dodatne ugodnosti za člane, ki se pridružijo v določenem obdobju.
 
-> **Claude (teoretična interpretacija - Dorotic et al., 2011):**
-> Nizek redemption rate pri promocijski skupini (0,4 % vs. 1,7 %) lahko
-> razložimo skozi dva konkurenčna mehanizma, ki ju opisujeta Dorotic,
-> Bijmolt & Verhoef (2011):
->
-> - **"Pritisk točk"** (points pressure): kratkoročno kopičenje točk
->   pred unovčenjem, ki naj bi se s časom izenačilo s standardno
->   skupino, ko bodo promocijski člani dlje časa v programu.
-> - **Trajna vedenjska razlika**: promocija je preprosto privabila drug
->   profil strank (npr. bolj poslovne letalce), ki jim unovčenje ni
->   prioriteta, in se to ne bo spremenilo s časom.
->
-> Če imaš na voljo podatek o datumu vpisa oz. dolžini članstva
-> (tenure), bi bilo smiselno preveriti, ali se redemption rate pri
-> promocijski skupini povečuje s časom članstva — to bi ločilo med
-> zgornjima razlagama. Spodaj je okvirna (psevdo)koda, ki jo je treba
-> prilagoditi glede na dejansko ime stolpca z datumom vpisa (npr.
-> `Enrollment Year`/`Enrollment Month` iz Customer Loyalty History).
+Po drugi strani pa se CLV med skupinama praktično ne razlikuje, saj so rezultati Wilcoxonovega testa W = 7683302 in p-vrednost = 0.8432. Promocija torej ni pritegnila strank z višjo dolgoročno vrednostjo, temveč zgolj bolj aktivne letalce. Tu je pomembno omeniti, da naši podatki obsegajo le dve leti. Torej v teh dveh letih promocija ni pritegnila strank z višjo CLV, bi bilo pa  zanimivo videti daljše obdobje in rezultate le teh.
 
-```{r, eval=FALSE}
-# Claude dodatek (psevdokoda - prilagodi ime stolpca z datumom vpisa)
-# Predpostavka: obstaja stolpec 'tenure_months' = št. mesecev od vpisa do konca opazovanja
+Spomnimo se na mehanizme, ki jih omenjajo Henderson, Beck & Palmatier (2011), ki pravijo, da promocija z bonus stopnjo nabiranja točk cilja predvsem na mehanizma statusa in navade (hitrejše kopičenje nagrad), ne pa nujno na mehanizem odnosa (čustvena zavezanost), o katerem govori Verhoef (2003). To je zagotovo eden od razlogov, zakaj promocija poveča aktivnost, ne pa tudi dolgoročne vrednosti (CLV) strank.
 
-df %>%
+Tip kartice zvestobe (Star/Nova/Aurora) ni statistično povezan z vrsto vpisa, saj je Chi test vrnil rezultete X-squared = 0.68438 in p-value = 0.7102. Promocija torej ni bila bolj privlačna za določen segment kartic.
+
+Pomembna opomba je, da ker gre bolj za opazovalne podatke, višja aktivnost promocijske skupine ne pomeni nujno, da je promocija vzročno povečala angažiranost. Enako verjeten scenarij je samoselekcija, pred katero opozarjajo Dorotic, Bijmolt & Verhoef (2011), in sicer da so se bolj pogosti letalci raje odločili za vključitev preko promocije. Za bolj zanesljiv vzročni zaključek bi bilo treba narediti longitudinalno primerjavo iste skupine pred in po vključitvi.
+
+
+
+
+```{r}
+dt %>% 
   filter(`Enrollment Type` == "2018 Promotion") %>%
-  mutate(tenure_group = ntile(tenure_months, 4)) %>%   # razdelitev na kvartile po dolžini članstva
-  group_by(tenure_group) %>%
+  group_by(tenure_months) %>%
   summarise(
-    povp_redemption_rate = mean(redemption_rate, na.rm = TRUE),
-    n = n()
-  )
-# Če povp_redemption_rate narašča s tenure_group -> podpira hipotezo "pritisk točk"
-# Če ostaja konstantno nizek -> podpira hipotezo trajne vedenjske razlike
-```
-
-Manjkajo:
-
-- pogled tudi po izobrazbi in prihodku (ta je delno pokrit v regresijskem
-  modelu spodaj).
-
-> **Claude (dodana analiza — heterogenost po Liu, 2007):** Liu (2007)
-> ugotavlja, da se odziv na promocijo bistveno razlikuje glede na
-> začetno raven porabe: težki kupci se skoraj ne spremenijo, lahki in
-> zmerni kupci pa svojo aktivnost postopoma povečajo. Zgornja analiza
-> primerja le *povprečja* med skupinama, kar to heterogenost popolnoma
-> zamaskira. Spodaj stranke razdelimo v tercile glede na skupno
-> aktivnost (`total_flights_sum`) in znotraj vsakega tercila primerjamo
-> učinek promocije — s tem lahko preverimo, ali je učinek promocije
-> resnično večji pri lahkih/zmernih kot pri težkih uporabnikih, kot
-> predvideva teorija.
->
-> *Opomba:* ker `total_flights_sum` meri aktivnost v celotnem
-> opazovanem obdobju (torej po vpisu), je to zgolj približek "ravni
-> uporabe" in ne prava predpromocijska (baseline) meritev — če je v
-> podatkih na voljo aktivnost pred vpisom, bi bilo bolje segmentirati po
-> njej.
-
-```{r}
-# Claude dodatek: segmentacija po ravni aktivnosti (Liu, 2007)
-
-df_segmented <- df %>%
-  mutate(usage_tercile = ntile(total_flights_sum, 3),
-         usage_tercile = factor(usage_tercile,
-                                 levels = 1:3,
-                                 labels = c("Lahki", "Zmerni", "Težki")))
-
-# Povprečno število poletov po segmentu in tipu vpisa
-df_segmented %>%
-  group_by(usage_tercile, `Enrollment Type`) %>%
-  summarise(
+    povp_flights = mean(`Total Flights`, na.rm = TRUE),
     n = n(),
-    povp_flights = mean(total_flights_sum, na.rm = TRUE),
-    povp_redemption_rate = mean(redemption_rate, na.rm = TRUE),
     .groups = "drop"
-  )
-
-# Interakcijski model: ali je učinek promocije odvisen od segmenta uporabe?
-model_interakcija <- lm(total_flights_sum ~ `Enrollment Type` * usage_tercile,
-                         data = df_segmented)
-summary(model_interakcija)
-```
-
-> **Claude:** Če je interakcijski člen `Enrollment Type:usage_tercile`
-> statistično značilen, to potrjuje Liujevo (2007) hipotezo, da učinek
-> promocije ni enak v vseh segmentih uporabe. Rezultat velja
-> interpretirati previdno, saj `total_flights_sum` odraža tudi rezultat
-> promocije, ne le izhodiščno stanje (glej opombo zgoraj).
-
-Pomembna omejitev interpretacije zgornjih rezultatov je tudi časovna
-dinamika. Liu (2007) izpostavlja, da se največja sprememba vedenja zgodi
-v prvih treh mesecih po vključitvi v program.
-
-> **Claude (dodana analiza — časovna dinamika, Liu 2007):** Trenutni
-> pregled (spodaj v razdelku Vizualizacija) prikazuje gibanje po
-> koledarskih mesecih, kar ne pove, kako se aktivnost giblje glede na
-> **čas od vpisa posamezne stranke**. Če je v `Customer_Flight_Activity`
-> oz. `Customer_Loyalty_History` na voljo datum vpisa, bi bilo
-> smiselno izračunati aktivnost po "mesecih od vpisa" (0, 1, 2, 3, ...)
-> in primerjati krivuljo med promocijsko in standardno skupino — to bi
-> neposredno preverilo, ali promocijski člani hitreje vzpostavijo novo
-> nakupno (letalsko) navado, kot predvideva teorija. Spodaj je okvirna
-> koda, ki jo je treba prilagoditi glede na dejanska imena stolpcev z
-> datumom vpisa.
-
-```{r, eval=FALSE}
-# Claude dodatek (psevdokoda - prilagodi imena stolpcev z datumom vpisa in aktivnosti)
-
-Customer_Flight_Activity %>%
-  left_join(Customer_Loyalty_History %>% select(`Loyalty Number`, `Enrollment Type`,
-                                                 `Enrollment Year`, `Enrollment Month`),
-            by = "Loyalty Number") %>%
-  mutate(
-    enrollment_date = make_date(`Enrollment Year`, `Enrollment Month`, 1),
-    activity_date   = make_date(Year, Month, 1),
-    months_since_enrollment = interval(enrollment_date, activity_date) %/% months(1)
   ) %>%
-  filter(months_since_enrollment >= 0, months_since_enrollment <= 12) %>%
-  group_by(`Enrollment Type`, months_since_enrollment) %>%
-  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
-  ggplot(aes(x = months_since_enrollment, y = povp_flights, color = `Enrollment Type`)) +
-  geom_line(linewidth = 1) +
-  geom_vline(xintercept = 3, linetype = "dashed", color = "gray40") +
-  labs(title = "Aktivnost glede na čas od vpisa",
-       subtitle = "Navpična črta = 3 mesece (Liu, 2007: kritično obdobje za vzpostavitev navade)",
-       x = "Meseci od vpisa", y = "Povp. število poletov") +
-  theme_minimal()
+  ggplot(aes(x = tenure_months, y = povp_flights)) +
+  geom_line() +
+  geom_point() +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Mesecev od vpisa (0 = mesec vpisa)", y = "Povprečno št. letov",
+       title = "Aktivnost letenja pred in po vpisu v 2018 Promotion")
 ```
-
-> **Claude (dodana analiza — velikost učinka):** Ker je vzorec zelo
-> velik (>16.000 strank), bo praktično vsaka razlika statistično
-> značilna, tudi če je praktično zanemarljiva. Poleg p-vrednosti je
-> zato smiselno poročati tudi standardizirano velikost učinka (Cohenov
-> d) za razliko v številu poletov med skupinama.
 
 ```{r}
-# Claude dodatek: velikost učinka (Cohen's d) za razliko v flights
-
-# install.packages("effsize")  # če paket še ni nameščen
-library(effsize)
-
-cohen_d_flights <- cohen.d(total_flights_sum ~ `Enrollment Type`, data = df)
-cohen_d_flights
+dt %>%
+  filter(`Enrollment Type` == "2018 Promotion") %>%
+  group_by(Year, Month) %>%
+  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = interaction(Year, Month, lex.order = TRUE), y = povp_flights, group = 1)) +
+  geom_line() + geom_point() +
+  labs(title = "Standarda skupina: koledarska aktivnost letenja",
+       x = "Leto in mesec",
+       y = "Povprečno število letov")
 ```
+
+
+```{r}
+dt %>%
+  filter(`Enrollment Type` == "Standard") %>%
+  group_by(Year, Month) %>%
+  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = interaction(Year, Month, lex.order = TRUE), y = povp_flights, group = 1)) +
+  geom_line() + geom_point() +
+  labs(title = "Standarda skupina: koledarska aktivnost letenja",
+       x = "Meseci v letih 2017 in 2018",
+       y = "Povprečno število letov")
+```
+
+Standarda skupina kaže jasen sezonski vzorec, saj vidimo, da so bili vrhovi števila letov poleti, specifično meseca julija. Najnižje številke letov pa so bile meseca januarja in aprila. To je bil jasen vzorec v obeh letih. S tem potrjujemo, da je splošna sezonskost realna in jo je treba ločiti od morebitnega učinka promocije, ki bi ga lahko interpretirali iz prvih dveh grafov.
+
+#### Diff in diffanaliza
+
+Do so rezultati nakazali učinkovitost promocije, vendar so bili tako v testih opisne statistike kot v zgornjih grafih prisotni problemi, ki nam ne zagotovijo učinkovitosti promocije. Zato bomo sedaj naredili diff-in-diff analizo, ki rešuje oba primera z eno idejo: namesto primerjave ravni aktivnosti med skupinama, primerjamo, kako se je aktivnost spremenila znotraj vsake skupine med dvema obdobjema in šele te spremembe primerjamo med seboj. 
+
+Ker se je promocija začela šele leta 2018, smo se odločili, da si želimo primerjati spremembo med skupinama po kvartalih.
+
+```{r}
+dt_dd <- dt %>%
+  filter(Year == 2018) %>%
+  mutate(
+    kvartal = if_else(Month <= 3, "Q1", ifelse((Month <= 6), "Q2",
+                      ifelse(Month <= 9, "Q3", "Q4"))),
+    is_promotion = if_else(`Enrollment Type` == "2018 Promotion", 1, 0)
+  )
+
+model_dd <- lm(`Total Flights` ~ is_promotion * kvartal, data = dt_dd)
+summary(model_dd)
+```
+
+V linearnem modelu, ki je izgledal kot `Total Flights ~ is_promotion * kvartal`, smo dobili statistično značilne čisto vse interakcijske člene, kar nam potrjuje, da je promocijska skupina rasla hitreje od tega, kar bi pričakovali samo na podlagi sezonskega trenda. Posledice promocije so bile torej povezane z dejansko spremembo vedenja, ne le z drugačno sestavo strank.
+Če bi bile te interakcije neznačilna, bi to pomenilo, da je celotna razlika med skupinama pojasnjena s splošnim trendom (sezonskostjo) in stalnimi razlikami med skupinama, ne pa z učinkom promocije samim. Poglejmo si še povprečno mesečno število letov po kvartalih in po promocijski skupini.
+
+```{r}
+# Povprečna sprememba flights po koledarskih mesecih, ločeno po skupini
+t3 <- dt %>%
+  mutate(kvartal = if_else(Year == 2017, "2017",
+                            if_else(Month <= 3, "2018_Q1",
+                            ifelse(Month <= 6, "2018_Q2",
+                            ifelse(Month <= 9, "2018_Q3", "2018_Q4"))))) %>%
+  group_by(`Enrollment Type`, kvartal) %>%
+  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), n = n(), .groups = "drop")
+
+kbl(t3, booktabs = TRUE, caption = "Povprečja po kvartalih",
+   align = "cc", row.names = FALSE) %>%
+   kable_styling(latex_options = c("striped", "hold_position"), stripe_color = "gray!15") %>%
+  column_spec(1, bold = TRUE, color = "black")
+```
+
+
 
 ## Faktorji, ki vplivajo na engagement
 
@@ -330,176 +425,85 @@ cohen_d_flights
 ## -------------------------------------------------------------------------
 ## 5. FAKTORJI, KI VPLIVAJO NA ENGAGEMENT
 ## -------------------------------------------------------------------------
+library(dplyr)
 
-# Korelacija numeričnih spremenljivk z engagementom
-df %>%
-  select(Salary, CLV, total_flights_sum, total_distance, redemption_rate) %>%
-  cor(use = "pairwise.complete.obs")
+data <- Customer_Flight_Activity_Clean %>%
+  filter(Year == 2018) %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    total_flights_sum    = sum(`Total Flights`, na.rm = TRUE),
+    total_distance       = sum(Distance, na.rm = TRUE),
+    points_accumulated   = sum(`Points Accumulated`, na.rm = TRUE),
+    points_redeemed      = sum(`Points Redeemed`, na.rm = TRUE),
+    active_months        = n_distinct(paste(Year, Month)),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    redemption_rate       = if_else(points_accumulated > 0,
+                                     points_redeemed / points_accumulated, 0),
+    avg_flights_per_month = total_flights_sum / active_months
+  ) %>% left_join(Customer_Loyalty_History, by = "Loyalty Number")
 
-library(reshape2)  # za melt(), ali uporabi tidyr::pivot_longer
-
-cor_matrix <- df %>%
-  select(Salary, CLV, total_flights_sum, total_distance, redemption_rate) %>%
-  cor(use = "pairwise.complete.obs")
-
-cor_long <- melt(cor_matrix)
-
-ggplot(cor_long, aes(x = Var1, y = Var2, fill = value)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = round(value, 2)), color = "black", size = 4) +
-  scale_fill_gradient2(low = "steelblue", mid = "white", high = "firebrick",
-                        midpoint = 0, limits = c(-1, 1), name = "r") +
-  labs(title = "Korelacijska matrika: Salary, CLV in engagement metrike",
-       x = NULL, y = NULL) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Na grafu korelacije vidimo, da ni absolutno nobene korelacije, ki bi
-pojasnila aktivnost.
+Sedaj pa nas zanimajo še faktorji, ki vplivajo na angažiranost v programu zvestobe. Odločili smo se, da bomo pogledali model, kjer bo odvisna spremenljivka vsota števila letov v letu 2018, ko so se vključili že člani promocije. Ker je bila odvisna spremenljivka `total_flights_sum` definirana kot skupno število letov posameznega člana v opazovanem obdobju, smo za napovedovanje angažiranosti uporabili model takšne podatke, pri čemer smo namesto linearne regresije uporabili negarivno binomsko regresijo.
+
+Pri problem so bile manjkajoče vrednosti pri spremenljivki `Salary`, ki so se v večinskem delu pojavljale pri vrednosti College spremenljivke `Education`. To nas je prepričalo, da moramo najprej pogledati povezanost teh dveh, saj morda `Salary` sploh ni nujna spremenljivka za vključitev v model.
+
+Najprej smo preverili povezanost z `Education` in ugotovili zelo močno statistično značilno povezavo (ANOVA: F = 5048, p < 0,001). Zaradi tega bi imputacija plač za to skupino zahtevala precej močne predpostavke in bi lahko v model vnesla umetno informacijo. Nato smo preverili, ali `Salary` poleg `Education` sploh prispeva dodatno napovedno vrednost v modelu. Na istem vzorcu 12.464 članov z znano plačo smo primerjali model z `Education` in ostalimi demografskimi značilnostmi z razširjenim modelom, ki je vključeval tudi `Salary`.
+
+Model brez `Salary` je imel nižji `AIC`, poleg tega pa `Salary` v razširjenem modelu ni bil statistično značilen (p = 0,954). Rezultati zato kažejo, da po upoštevanju `Education` in ostalih značilnosti `Salary` ne prinaša pomembne dodatne informacije za napoved števila letov. Na podlagi tega smo se odločili, da `Salary` iz modela izključimo in se tako izognemo nezanesljivi imputaciji manjkajočih vrednosti, pri čemer `Education` ostane kot bolj robusten in popoln prediktor.
+
 
 ```{r}
-# Linearni model: kaj napoveduje število poletov?
-model <- lm(total_flights_sum ~ Salary + Education + `Marital Status` +
-              Gender + `Loyalty Card` + is_promo_2018, data = df)
-summary(model)
+library(MASS)
+m_base <- glm.nb(total_flights_sum ~ Education + Province + `Marital Status` + `Enrollment Type`, data = data)
+
+s <- summary(m_base)
+
+print(s$coefficients)
+cat("\nTheta:", m_base$theta, "\n")
+cat("SE(theta):", s$SE.theta, "\n")
+cat("AIC:", AIC(m_base), "\n")
 ```
 
-Korelacijska matrika pokaže, da so povezave med Salary, CLV in metrikami
-angažiranosti (št. poletov, razdalja, redemption rate) praktično ničelne
-(vse |r| < 0,03) – plača in CLV torej sama po sebi ne napovedujeta,
-koliko stranka leti. Pričakovano je le zelo visoka korelacija med
-total_flights_sum in total_distance (r = 0,97), kar je logično, saj gre
-za dve meri istega pojava (več poletov = več prepotovanih km), zato ju v
-modelu ne smemo uporabljati skupaj kot neodvisni spremenljivki.
+Osnovni model kaže, da je `Enrollment Type` daleč najmočnejši napovednik števila letov, saj je koeficient pri `Enrollment TypeStandard` enak -1.115 (p < 0.001), kar pomeni (exp(-1.115) ≈ 0.33), da standardni člani v povprečju letijo le tretjino toliko kot promocijski, ob nespremenjenih ostalih značilnostih.
 
-Linearni model (total_flights_sum ~ Salary + Education + Marital Status +
-Gender + Loyalty Card + is_promo_2018) potrjuje ta vtis: edini statistično
-značilen napovednik je is_promo_2018 (+17,1 poleta, p < 0,001). Vse
-demografske spremenljivke – plača, izobrazba, zakonski stan, spol in tip
-kartice – niso statistično značilne napovednice angažiranosti. Model kot
-celota pojasni le 5,7 % variance (R² = 0,057), kar je nizko in kaže, da
-glavni dejavniki angažiranosti niso zajeti v razpoložljivih demografskih
-spremenljivkah, temveč verjetno v vedenjskih ali časovnih dejavnikih
-(npr. namen potovanja, sezona, življenjski dogodki), ki jih v tem naboru
-podatkov nimamo.
+Demografske spremenljivke imajo v primerjavi s tem bistveno šibkejši učinek. Izobrazba je delno značilna (doktorat ima nekoliko manj poletov, srednja šola ali manj in magisterij pa nekoliko več, p < 0.05), a učinki so majhni v primerjavi s tipom vpisa. Spremenljivka `Province` kaže nekaj značilnih negativnih odstopanj (Manitoba, Newfoundland, Nova Scotia, PEI, Quebec letijo manj kot referenčna provinca). Zakonski stan ni relevanten napovednik.
 
-Sklep: demografija (kdo je stranka) pojasnjuje presenetljivo malo o tem,
-kako pogosto stranka leti – edini dejavnik z jasnim in močnim učinkom je
-pripadnost 2018 promocijski kohorti.
-
-> **Claude (teoretična razlaga nizkega R² — Verhoef, 2003):** Nizek R²
-> demografskega modela (5,7 %) ni presenečenje, temveč je natančno
-> skladen z ugotovitvijo Verhoefa (2003), da preteklo vedenje pojasni
-> okoli 90 % variance angažiranosti, demografske spremenljivke pa zelo
-> malo. To torej ni pomanjkljivost analize, ampak empirična potrditev
-> teorije — vredno je to eksplicitno izpostaviti v sklepu, namesto da
-> nizek R² zveni kot presenečenje ali pomanjkljivost podatkov.
->
-> Če je smiselno (in ne povzroča kolinearnosti z odvisno spremenljivko),
-> je zanimivo preveriti, koliko variance pojasni model, ki poleg
-> demografije vključi tudi mero preteklega vedenja (npr.
-> `points_accumulated`, ki ni neposredno del `total_flights_sum`) — to
-> bi Verhoefovo tezo empirično podprlo na teh podatkih.
+Zanimalo nas je tudi, kaj bi se zgodilo, če bi v model dodali spremenljivko kot je število zbranih točk, ki je do neke mere direktno povezana z številom letov, vendar bi lahko rekli, da odraža prejšnje navade letenja. Pogledali smo si še to in za oba modela izračunali primerjivo metriko R2.
 
 ```{r}
-# Claude dodatek: razširjen model s preteklim vedenjem (Verhoef, 2003)
+m_points <- glm.nb(total_flights_sum ~ Education + Province + `Marital Status` + `Enrollment Type` +
+                     points_accumulated, data = data)
+s2 <- summary(m_points)
 
-model_razsirjen <- lm(total_flights_sum ~ Salary + Education + `Marital Status` +
-                         Gender + `Loyalty Card` + is_promo_2018 + points_accumulated,
-                       data = df)
-summary(model_razsirjen)
+print(s2$coefficients)
+cat("\nTheta:", m_points$theta, "\n")
+cat("SE(theta):", s2$SE.theta, "\n")
+cat("AIC:", AIC(m_points), "\n")
 
-# Primerjava pojasnjene variance med osnovnim in razširjenim modelom
-data.frame(
-  model = c("Demografija + promocija", "Demografija + promocija + points_accumulated"),
-  R2    = c(summary(model)$r.squared, summary(model_razsirjen)$r.squared)
-)
+# Psevdo-R² (McFadden) za oba modela, saj klasični R² pri GLM ne obstaja
+pR2_base   <- 1 - (m_base$deviance / m_base$null.deviance)
+pR2_points <- 1 - (m_points$deviance / m_points$null.deviance)
+
+data.frame(model = c("Osnovni (brez points)", "Razširjen (s points_accumulated)"),
+           pseudo_R2 = c(pR2_base, pR2_points))
 ```
 
-## Vizualizacija
+Z dodano spremenljivko `Points Accumulated`, se je model precej spremenil. Koeficient pri njej je majhen (0.0000383), a zelo značilen (p < 0.001), kar ni presenetljivo, saj so točke izpeljane iz razdalje, ta pa skoraj popolnoma korelira s poleti (r = 0.97).
 
-```{r}
-## -------------------------------------------------------------------------
-## 6. VIZUALIZACIJE
-## -------------------------------------------------------------------------
+Najbolj opazna posledica je, da koeficient pri `Enrollment TypeStandard` spremeni predznak (+1.557, p < 0.001). To ni vedenjska ugotovitev, ampak mehanski artefakt, saj promocijski člani dobijo 1,5 točke/km, standardni le 1 (ugotovitev od prej), zato imajo pri enaki količini nabranih točk manj dejanskih poletov. Model to zazna kot navidezno "negativen" učinek promocije. Vzporedno večina demografskih spremenljivk izgubi značilnost, ker spremenljivka zbranih točk absorbira variabilnost, ki so jo prej pojasnjevale.
 
-# 6a. Distribucija CLV po enrollment tipu (boxplot - primerjava skupin, robusten na osamelce)
-ggplot(df, aes(x = `Enrollment Type`, y = CLV, fill = `Enrollment Type`)) +
-  geom_boxplot(outlier.alpha = 0.3) +
-  labs(title = "CLV glede na tip vpisa v program zvestobe",
-       y = "Customer Lifetime Value", x = NULL) +
-  theme_minimal() +
-  theme(legend.position = "none")
+Osnovni model doseže McFadden psevdo-R2 = 0.229, razširjeni pa 0.492. Ti vrednosti nista neposredno primerljivi s klasičnim R2, saj je pri McFaddenovi meri že 0.2–0.4 velja za dober do zelo dober model, zato ju ne smemo brati kot "nizki".
 
-# 6b. Časovna vrsta: povprečno število poletov na mesec po letih (učinek promocije v času)
-Customer_Flight_Activity %>%
-  group_by(Year, Month) %>%
-  summarise(povp_flights = mean(`Total Flights`, na.rm = TRUE), .groups = "drop") %>%
-  mutate(date = make_date(Year, Month, 1)) %>%
-  ggplot(aes(x = date, y = povp_flights)) +
-  geom_line(color = "steelblue") +
-  geom_vline(xintercept = as.numeric(make_date(2018, 1, 1)),
-             linetype = "dashed", color = "red") +
-  labs(title = "Povprečno število poletov skozi čas",
-       subtitle = "Rdeča črta = začetek 2018 promocije",
-       x = NULL, y = "Povp. Total Flights") +
-  theme_minimal()
+Skok med modeloma gre pripisati skoraj izključno spremenljviki točk, ki je s poleti močno povezana. Zato ga ne smemo razlagati kot potrditev, da preteklo vedenje (Verhoef, 2003) bolje pojasni angažiranost, saj prave mere preteklega vedenja sploh nimamo. Bolj verodostojna ocena, koliko demografija in tip vpisa dejansko pojasnita variabilnost letenja, je zato psevdo-R2 osnovnega modela (0.229), ki ima, kot že rečeno, dobro vrednost.
 
-# 6c. Redemption rate po tipu kartice in enrollment tipu
-ggplot(df, aes(x = `Loyalty Card`, y = redemption_rate, fill = `Enrollment Type`)) +
-  geom_boxplot() +
-  labs(title = "Stopnja unovčitve točk po tipu kartice in vpisa",
-       y = "Redemption rate", x = "Loyalty Card") +
-  theme_minimal()
+### Sklep
 
-# 6d. Churn rate po enrollment tipu (bar chart - deleži)
-df %>%
-  group_by(`Enrollment Type`) %>%
-  summarise(churn_rate = mean(churned)) %>%
-  ggplot(aes(x = `Enrollment Type`, y = churn_rate, fill = `Enrollment Type`)) +
-  geom_col() +
-  scale_y_continuous(labels = scales::percent) +
-  labs(title = "Delež odpovedi članstva po tipu vpisa", y = "Churn rate", x = NULL) +
-  theme_minimal() +
-  theme(legend.position = "none")
-```
+Analiza je pokazala, da je promocija 2018 najmočnejši in praktično edini pomemben dejavnik angažiranosti strank v vseh modelih (opisna statistika, diff-in-diff, Negativna Binoska). S svojo statistično značilnostjo je imela mnogo večji vpliv kot demografske značilnosti (plača, izobrazba, spol, zakonski stan), ki so se izkazale za bodisi neznačilne, bodisi značilne, a z zanemarljivo majhnim učinkom. Promocijski člani tako letijo bistveno več od standardnih, ta razlika pa je delno posledica strukturnega bonusa pri nabiranju točk (1,5 namesto 1 točke/km) in dodatnih iz podatkov neopaznih ugodnosti, delno pa dejanske spremembe vedenja. Analiza diff-in-diff namreč kaže, da je rast aktivnosti pri promocijski skupini presegla splošni sezonski trend, ki smo ga kontrolirali s pomočjo standardne skupine.
 
-> **Claude (predlog dodatne vizualizacije):** Za bolj neposredno
-> podporo hipotezi Liu (2007) o hitrosti vzpostavitve navade bi bilo
-> koristno dodati graf, ki prikazuje `povp_flights` glede na **mesece
-> od vpisa** namesto koledarskih mesecev (glej R chunk zgoraj v
-> razdelku "Učinkovitost 2018 promocije"), ločeno za promocijsko in
-> standardno skupino.
+Hkrati promocija ni vplivala na dolgoročno vrednost strank (CLV) niti na koriščenje točk (redemption rate), kar je skladno s tem, da je verjetno ciljala predvsem na mehanizma statusa in navade (Henderson, Beck & Palmatier, 2011), ne pa na čustveno zavezanost (Verhoef, 2003), ki bi dolgoročno vrednost dvignila. Vzorec visoke aktivnosti, a nespremenje dolgoročne vrednosti se ujema tudi z ugotovitvijo, da demografske značilnosti pojasnijo presenetljivo malo variance v angažiranosti, kar potrjuje Verhoefovo (2003) tezo, da vedenje (ne pa kdo je stranka) poganja angažiranost.
 
-## Sklep in omejitve
+Ker gre za opazovalne podatke, teh ugotovitev ne moremo interpretirati kot dokončen dokaz vzročnosti, saj enako verjetna razlaga ostaja, da je promocija privabila že bolj aktiven profil strank (samoselekcija), kar diff-in-diff kontrola za sezonskost zmanjša, a ne izniči povsem. Pri interpretaciji je treba upoštevati tudi, da v podatkih nimamo meritev nedenarnih (hedonskih, simbolnih, socialnih) koristi, za katere Mimouni-Chaabane in Volle (2009) trdita, da so ključne za dolgoročno zvestobo in kar bi lahko delno pojasnilo, zakaj se učinek promocije ne prenese na CLV. Prav tako je treba upoštevati, da analiza ne loči zares med kratkoročnim in dolgoročnim odzivom, saj podatki pokrivajo obdobje neposredno po uvedbi promocije. Za dokončnejši vzročni zaključek in oceno dolgoročne učinkovitosti bi bile potrebne longitudinalne podatke, ki bi segale dlje v prihodnost.
 
-> **Claude (dodan povzetni sklep in omejitve):**
->
-> Analiza kaže, da je promocija 2018 uspešno povečala aktivnost
-> (število poletov) vključenih strank, kar je delno posledica
-> strukturnega bonusa pri nabiranju točk (1,5× množitelj na km), ne le
-> marketinškega učinka same akcije. Hkrati promocija ni vplivala na
-> dolgoročno vrednost strank (CLV) niti na koriščenje ugodnosti
-> (redemption rate), kar je skladno s tem, da je promocija verjetno
-> ciljala predvsem na mehanizma statusa/navade (Henderson, Beck &
-> Palmatier, 2011), ne pa na čustveno zavezanost (Verhoef, 2003), ki bi
-> dolgoročno vrednost povečala.
->
-> Pri interpretaciji rezultatov je treba upoštevati naslednje omejitve:
->
-> 1. **Samoizbira** — brez longitudinalnih podatkov (pred/po vpisu iste
->    stranke) ne moremo z gotovostjo trditi, da je promocija vzročno
->    povečala angažiranost, saj gre lahko za samoselekcijo že bolj
->    aktivnih letalcev (Dorotic, Bijmolt & Verhoef, 2011; Verhoef, 2003).
-> 2. **Manjkajoče nedenarne koristi** — v podatkih nimamo meritev
->    hedonskih, simbolnih ali socialnih koristi (prepoznava,
->    ekskluzivnost, status), za katere Mimouni-Chaabane & Volle (2009)
->    trdita, da so ključne za dolgoročno zvestobo. To lahko delno
->    razloži, zakaj promocija ni vplivala na CLV, in omejuje, kako
->    celovito lahko ocenimo dolgoročno učinkovitost kampanje.
-> 3. **Kratkoročni vs. dolgoročni učinki** — analiza trenutno ne loči
->    med kratkoročnim in dolgoročnim odzivom na promocijo (glej Liu,
->    2007; Henderson, Beck & Palmatier, 2011); dodane analize po
->    mesecih od vpisa (zgoraj) bi to lahko delno naslovile, če so
->    ustrezni podatki na voljo.
