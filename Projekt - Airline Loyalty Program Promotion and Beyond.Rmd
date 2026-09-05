@@ -1,18 +1,25 @@
 ---
 title: "Projekt - Airline Loyalty Program Promotion and Beyond"
 author: "Manca Prošek, Tristan Dragan, Patricija Jaklič"
-date: "2026-08-14"
+date: "`r format(Sys.Date(), '%d.%m.%Y')`"
 output:
   pdf_document:
     latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: true
   html_document:
     df_print: paged
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 options(scipen = 999)
 pdf.options(family = "ArialMT")
+knitr::opts_chunk$set(echo = FALSE,
+                      comment = "",
+                      fig.align = 'center', 
+                      warning = FALSE,
+                      message = FALSE)
 ```
 
 ```{r include=FALSE}
@@ -40,7 +47,32 @@ library(FSA)
 library(randomForest)
 library(corrplot)
 library(cluster)
+library(sysfonts)
+library(showtext)
 ```
+
+```{r message=FALSE}
+font_add_google("Lato", "lato")  # Doda pisavo Lato
+showtext_auto()  # Omogoči uporabo pisav
+```
+
+\newpage
+
+# Uvod
+
+V okviru projektne naloge analiziramo podatke programa zvestobe letalske družbe, ki vključujejo dva medsebojno povezana podatkovna vira: podatke o mesečni letalski aktivnosti članov (`Customer Flight Activity`) in podatke o samih članih programa zvestobe (`Customer Loyalty History`), vključno z demografskimi, finančnimi in vedenjskimi značilnostmi.
+
+Cilj naloge je s pomočjo statističnih metod bolje razumeti vedenje strank ter podati priporočila za izboljšanje programa zvestobe. Analizo smo razdelili na naslednje sklope:
+
+- **Eksploratorna podatkovna analiza**, kjer preverimo osnovne značilnosti in porazdelitve spremenljivk v obeh podatkovnih virih.
+- **Ocena kakovosti podatkov**, kjer preverimo natančnost, celovitost, doslednost, pravočasnost, veljavnost in enoličnost podatkov ter ustrezno očistimo ugotovljene nepravilnosti (npr. negativne plače, podvojeni zapisi).
+- **Razumevanje dejavnikov vključenosti v program in učinkovitost promocijske kampanje 2018**, kjer analiziramo, ali je promocija privabila bolj aktivne oziroma bolj vredne stranke.
+- **Segmentacija strank z visoko vrednostjo**, kjer stranke razvrstimo v segmente na podlagi CLV (kvartilna analiza) ter dodatno s pomočjo algoritma k-means glede na vedenjske značilnosti, in predlagamo ukrepe za optimizacijo.
+- **Napovedovanje odliva strank (churn)**, kjer raziščemo vzorce prekinitve članstva glede na čas vpisa, demografske in vedenjske značilnosti ter pripravimo podatke za napovedni model, pri čemer posebno pozornost namenimo preprečevanju pojava *data leakage*.
+
+Analiza je bila izvedena s programo R, rezultati posameznih sklopov pa so predstavljeni v nadaljevanju poročila.
+
+\newpage
 
 # Eksploratorna podatkovna analiza 
 
@@ -49,12 +81,12 @@ library(cluster)
 Customer_Flight_Activity <- read_csv("Customer Flight Activity.csv")
 ```
 
-```{r}
+```{r fig.width=8, fig.height=9}
 kable(summary(Customer_Flight_Activity))
 ```
 
 ```{r}
-anyNA.data.frame(Customer_Flight_Activity)
+# anyNA.data.frame(Customer_Flight_Activity)
 ```
 
 Podatkovni okvir vsebuje mesečno aktivnost članov programa zvestobe (Customer Flight Activity). Vsebuje 392,936 vrstic in 8 stolpcev, pri čemer vsaka vrstica predstavlja en let. Vse spremenljivke so numerične. Vidimo lahko, da so vrednosti v večini smiselne (na primer nimamo negativnega števila vseh letov, ipd.). Podatki so bili zbrani med letoma 2017 in 2018, člani programa zvestobe pa so opravili med 0 in 28 letov. Že iz povzetka lahko razberemo, da so podatki asimetrično porazdeljeni. Razen spremenljivk `Loyalty Number` in `Year`, katerih porazdelitev ni smiselna za analizo ter `Month`, ki je skoraj uniformno porazdeljen. Ni manjkajočih vrednosti.
@@ -93,15 +125,18 @@ Pri večini spremenljivk se z logaritmiranjem precej popravimo asimetričnost, v
 Customer_Loyalty_History <- read_csv("Customer Loyalty History.csv")
 ```
 
-```{r}
-# povzetek s knjižnjico skim
+```{r fig.width=14, fig.height=12}
 skimmed <- skim(Customer_Loyalty_History)
 
 skimmed %>%
   select(skim_type, skim_variable, n_missing, complete_rate,
          numeric.mean, numeric.sd,       
          character.n_unique, character.empty, character.min, character.max) %>% 
-  kable()
+  mutate(
+    # zaokrožimo numerične stolpce na 2 decimalki
+    across(where(is.numeric), ~ round(., 2))
+  ) %>%
+  kable(digits = 2, caption = "Povzetek podatkov")
 ```
 
 Podatkovni okvir vsebuje podatke o članih programa zvestobe (Customer Loyalty History). Vsebuje 16,737 vrstic in 16 stolpcev, pri čemer vsaka vrstica predstavlja posamezenga člana iz Kanade. Numeričnih spremenljivk je 7, opisnih pa 9. Tako imamo podatke od izobrazbe in zakonskega stana pa vse do plače. Prav `Salary` (plača) in `CLV` (*Customer lifetime value - total invoice value for all flights ever booked by member* ali skupna vrednost kupca) delujete asmitrično, dobro bi bilo da preverimo to še vizualno.
@@ -154,100 +189,15 @@ Customer_Loyalty_History_Log %>%
 
 Z logaritmiranjem `Salary` in `CLV` smo delno odpravili močno asimeričnost, ki je bila prisotna prej.
 
-
-# Viri
-
-## Customer churn-----------------------------------------
-
-1. članek/vir (osnove customer churn): Customer Churn Prediction: A Systematic Review of Recent Advances, Trends, and Challenges in Machine Learning and Deep Learning
-*Imani, M., Joudaki, M., Beikmohammadi, A., & Arabnia, H. R. (2025)*
-Link: [1.clanek] (www.mdpi.com/2504-4990/7/3/105?utm_source=chatgpt.com)
-
-2. članek/vir: An asymmetrical approach to understanding con gurations of customer loyalty in the airline industry
-*Catherine Prenticea, Sandra Maria Correia Loureirob*
-Link: [2.clanek] (https://www.sciencedirect.com/science/article/pii/S0969698917301789?fr=RR-1&ref=cra_js_challenge)
-
-3. članek/vir: Key drivers of passenger loyalty: A case of Frankfurt–Istanbul flights. (2016).
-*Journal of Air Transport Management*
-Link: [3.clanek]
-(https://www.sciencedirect.com/science/article/pii/S0969699715300120?utm_source=chatgpt.com)
-
-4. članek/vir: Frequent flyer programs in academic studies: A literature review of research progress since 2000. (2025).
-*Journal of Air Transport Management.*
-Link: [4.clanek]
-(https://www.sciencedirect.com/science/article/pii/S0969699725001838?utm_source=chatgpt.com)
-
-5. članek/vir: In Pursuit of Enhanced Customer Retention Management: Review, Key Issues, and Future Directions
-*Ascarza, E., Neslin, S. A., Netzer, O., et al. (2018)*
-Link: [5.clanek]
-(https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
-
-6. članek/vir: Beyond Accuracy: What Data Quality Means to Data Consumers. (2015) 
-*Richard Y. Wang & Diane M. Strong*
-Link: [6.clanek]
-(https://www.tandfonline.com/doi/abs/10.1080/07421222.1996.11518099)
--> Kakovost podatkov
-
-7. članek/vir: Data Fusion. ACM Computing Surveys, 41(1), Article 1.
-*Bleiholder, J., & Naumann, F. (2008)*
-Link: [7.clanek]
-(https://dl.acm.org/doi/abs/10.1145/1456650.1456651)
--> Strategija razreševanja konfliktov in utemeljitev, zakaj brez dodatnih kriterijev izbira ni upravičena.
-
-8. članek/vir:Data Cleaning of Data Streams
-*Restat, V., Rodenhausen, N., Antonin, C., & Störl, U. (2025).*
-Link: [8.clanek]
-(https://arxiv.org/abs/2507.20839)
-
-9. članek/vir: Data Cleaning: Problems and Current Approaches
-*Rahm, E., & Do, H. H. (2000).*
-Link: [9.clanek]
-(https://www.researchgate.net/publication/220282831_Data_Cleaning_Problems_and_Current_Approaches)
-
-10. članek/vir (Manca): The Long-Term Impact of Loyalty Programs on Consumer Purchase Behavior and Loyalty. Journal of Marketing
-*Liu, Y. (2007).*
-Link: [10.clanek]
-(https://www.researchgate.net/publication/237396598_The_Long-Term_Impact_of_Loyalty_Programs_on_Consumer_Purchase_Behavior_and_Loyalty)
-
-11. članek/vir (Manca): Understanding the Effect of Customer Relationship Management Efforts on Customer Retention and Customer Share Development. Journal of Marketing
-*Verhoef, P. C. (2003).*
-Link: [11.clanek]
-(https://www.researchgate.net/publication/242113836_Understanding_the_Effect_of_Customer_Relationship_Management_Efforts_on_Customer_Retention_and_Customer_Share_Development)
-
-12. članek/vir (Manca): Loyalty Programmes: Current Knowledge and Research Directions. International Journal of Management Reviews
-*Dorotic, M., Bijmolt, T. H. A., & Verhoef, P. C. (2011).*
-Link: [12.clanek]
-(https://www.researchgate.net/publication/229915137_Loyalty_Programmes_Current_Knowledge_and_Research_Directions)
-
-13. članek/vir (Manca): Perceived benefits of loyalty programs: Scale development and implications for relational strategies. Journal of Business Research
-*Mimouni-Chaabane, A., & Volle, P. (2009).*
-Link: [13.clanek]
-(https://www.sciencedirect.com/science/article/abs/pii/S0148296309000198)
-
-14. članek/vir (Manca): Review of the theoretical underpinnings of loyalty programs. Journal of Consumer Psychology
-*Henderson, C. M., Beck, J. T., & Palmatier, R. W. (2011).*
-Link: [14.clanek]
-(https://www.semanticscholar.org/paper/Review-of-the-theoretical-underpinnings-of-loyalty-Henderson-Beck/61ee71d3519da2034b51d2d03132916b2f351300)
-
-
+\newpage
 
 # Ocena kakovosti podatkov
 
-# Magisterska naloga-Janez-Bijec--------------------------------
-Vir/pomoč: Magistrska naloga: Janez Bijec: Statistični kazalniki kakovosti in
-učinkoviotsti oskrbe pacientov s koronarno boleznijo
+## Magisterska naloga Janeza Bijeca kot osnovi vir
 
-Izpiski:
-- Kdaj so podatki kakovostni? Kadar so "fit for purpose"
-- ocenjevanje kakovosti podatkov prilagodit vsaki analizi posebaj glede na 
-njene zahteve
-- Avtor v svoji analizi uporabi dva načina:
-        - 1. Na podlagi modela ocenjevanja in terminologije dimenzij kakovosti 
-        (prilagojen za elektronske zdravstvene podatke) 
-        (*skladnost*, *celovitost*, *prepričljivost - verjetnost*)
-        - 2. konceptualni način
+Pri ocenjevanju kakovosti podatkov je pomembno upoštevati namen njihove uporabe, saj so podatki kakovostni takrat, ko so »fit for purpose«, oziroma primerni za namen konkretne analize. Zato je treba način ocenjevanja kakovosti prilagoditi zahtevam in značilnostim posamezne analize. Bijec v magistrskem delu *Statistični kazalniki kakovosti in učinkovitosti oskrbe pacientov s koronarno boleznijo* kakovost podatkov obravnava na dva načina: prvi temelji na modelu ocenjevanja in terminologiji dimenzij kakovosti, prilagojenih elektronskim zdravstvenim podatkom, pri čemer izpostavlja skladnost, celovitost ter prepričljivost oziroma verjetnost podatkov, drugi pa temelji na konceptualnem pristopu. Ta izhodišča so uporabna tudi pri ocenjevanju kakovosti podatkov v naši analizi.
         
-## 1.NAČIN--------------------------------------------
+## 1.NAČIN: Na podlagi modela ocenjevanja in terminologije dimenzij kakovosti 
 
 ### MODEL OCENJEVANJA IN TERMINOLOGIJE DIMENZIJ KAKOVOSTI      
 a. SKLADNOST - ali so podatki skladni z definiranimi formati, ustrezajo
@@ -908,13 +858,27 @@ Hkrati promocija ni vplivala na dolgoročno vrednost strank (CLV) niti na koriš
 
 Ker gre za opazovalne podatke, teh ugotovitev ne moremo interpretirati kot dokončen dokaz vzročnosti, saj enako verjetna razlaga ostaja, da je promocija privabila že bolj aktiven profil strank (samoselekcija), kar diff-in-diff kontrola za sezonskost zmanjša, a ne izniči povsem. Pri interpretaciji je treba upoštevati tudi, da v podatkih nimamo meritev nedenarnih (hedonskih, simbolnih, socialnih) koristi, za katere Mimouni-Chaabane in Volle (2009) trdita, da so ključne za dolgoročno zvestobo in kar bi lahko delno pojasnilo, zakaj se učinek promocije ne prenese na CLV. Prav tako je treba upoštevati, da analiza ne loči zares med kratkoročnim in dolgoročnim odzivom, saj podatki pokrivajo obdobje neposredno po uvedbi promocije. Za dokončnejši vzročni zaključek in oceno dolgoročne učinkovitosti bi bile potrebne longitudinalne podatke, ki bi segale dlje v prihodnost.
 
+\newpage
 
-
-# (Tristan)  Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
+# (Tristan) Identificirajte segmente strank z visoko vrednostjo in predlagajte možne ukrepe za optimizacijo
 
 ## Osnovno oblikovanje segmentov glede na kvartile in priprava podatkov za analizo skupin
 
-Cilj je, da razdelimo stranke v segmente in ugotovimo kateri so tisti z visoko vrednostjo atributa `CLV` (Customer lifetime value), ki to direktno meri. Zato najprej poglejmo to netransformirano (logaritmirano) spremenljivko in njeno porazdelitev. 
+Cilj je, da stranke razdelimo v segmente in ugotovimo, kateri segmenti predstavljajo stranke z visoko vrednostjo in predlagamo ukrepe za optimizacijo. Eden izmed pristopov, ki se uporablja v literaturi, je segmentacija na podlagi vrednosti `CLV` (Customer Lifetime Value oziroma skupna vrednost stranke). `CLV` je mogoče uporabiti kot osnovo za oblikovanje segmentov, pri čemer stranke razvrstimo glede na njihovo relativno vrednost *(Lemon & Mark, 2008)*. Zato najprej pogledamo netransformirano (nelogaritmirano) spremenljivko CLV in njeno porazdelitev, nato pa na njeni osnovi oblikujemo vrednostne segmente.
+
+Poglejmo najprej opisne statistike spremenljivke `CLV`.
+
+```{r}
+sum_clv <- summary(Customer_Loyalty_History$CLV)
+tabela <- tibble(
+  Statistic = names(sum_clv),
+  Value = as.numeric(sum_clv)
+)
+
+kable(tabela, caption = "Povzetek vrednosti CLV", digits = 2)
+```
+
+Vidimo, da je najmanjša vrednost spremenljivke `CLV` $1898.01$, največja pa kar $83325.38$, zaradi velike razlike med povprečno vrednostjo spremenljivke $7988.90$ in mediano $5780.18$, lahko iz podatkov razberemo, da gre za asimetrično porazdelitev. 
 
 ```{r}
 clv_quantiles <- quantile(
@@ -958,7 +922,10 @@ ggplot(Customer_Loyalty_History, aes(x = CLV)) +
   ) +
   theme_minimal()
 ```
-Porazdeltiev `CLV` je močno asimetrična v desno, kar je razumljivo, namreč iz teorije vemo, da je delež tistih uporabnikov, ki prispevajo največjo vrednost, v resnici majhen (Paretov princip 20% ljudi prispeva 80% vrednosti). 
+
+Grafično potrdimo, da je `CLV` močno desno asimetrična, kar pomeni, da je večina strank skoncentrirana pri nižjih vrednostih, medtem ko manjši delež strank dosega zelo visoke vrednosti. *Benoit in Van den Poel (2009)* opozarjata, da so porazdelitve CLV pogosto močno asimetrične in da je pri analizi posebej pomemben zgornji del porazdelitve, kjer se nahajajo najbolj vredne stranke. Zaradi tega je smiselno stranke razvrščati tudi glede na kvartile CLV.
+
+Podoben koncept predstavlja Paretov princip oziroma pravilo 80/20, po katerem lahko relativno majhen delež populacije prispeva nesorazmerno velik delež celotne vrednosti. *Newman (2004)* pri tem poudarja, da Paretov princip ne velja samo za ekonomske pojave.
 
 ```{r}
 simple_CLV_analysis_df <- Customer_Loyalty_History %>%
@@ -979,18 +946,25 @@ simple_CLV_analysis_df <- Customer_Loyalty_History %>%
 table(simple_CLV_analysis_df$clv_quartile) %>%
   knitr::kable(col.names = c("Kvartilna skupina glede na CLV ", "Število članov"))
 ```
-Glede na kvartile smo oblikovali 4, skoraj enako velike, skupine strank glede na njihov `CLV` (*Najnižji, Nizko-srednji, Srednje-visoki, najvišji* ). Cilj je ugotoviti ali se tako oblikovane skupine, razlikujejo med seboj po ostalih atributih. Zato, ker bomo uporabili MANOVA analizo, ki predpostavlja normalnost uporabimo logaritmirane vrednosti asimetrično porazdeljenih atributov in ugotoviti kaj storiti z manjkajočimi vrednostmi.
+
+Glede na kvartile smo oblikovali 4 skoraj enako velike skupine strank glede na njihov `CLV` (*Najnižji, Nizko-srednji, Srednje-visoki, najvišji* ). Cilj je ugotoviti ali se tako oblikovane skupine, razlikujejo med seboj po vrednosti ostalih spremenljivk.
 
 ```{r}
-kable(simple_CLV_analysis_df%>%
-  group_by(clv_quartile) %>%
-  summarise(mean_CLV = mean(CLV, na.rm = TRUE)))
+kable(
+  simple_CLV_analysis_df %>%
+    group_by(clv_quartile) %>%
+    summarise(`Povprečni CLV` = mean(CLV, na.rm = TRUE)),
+  col.names = c("Kvartilna skupina", "Povprečni CLV"),
+  caption = "Povprečni CLV po kvartilnih skupinah",
+  digits = 2
+)
 ```
+
 Skupine se razlikujejo tudi po povprečni vrednosti `CLV` kot vidimo zgoraj v tabeli, vrednosti iz nižje v višjo skupino konsistentno naraščajo.
 
-Spremenljivka, ki ima velik delež mankajočih vrednosti ($25.44$%) je `Salary`. Te vrednosti bi bilo smiselno imputirati. To je v statistiki postopek nadomeščanja manjkajočih podatkov z ocenjenimi ali izračunanimi vrednostmi.
+Spremenljivka, ki ima velik delež mankajočih vrednosti ($25.44$%) je `Salary` (plača). Te vrednosti bi bilo smiselno imputirati. To je v statistiki postopek nadomeščanja manjkajočih podatkov z ocenjenimi ali izračunanimi vrednostmi.
 
-Za imputacijo `Salary` bomo zaradi visokega deleža manjkajočih vrednosti in odvisnosti mankajoče vrednosti od opazovane spremenljivke same (samo nekateri izmed tistih z izobrazbo *College* ima manjkajoče vrednosti) uporabili kompleksnejši multivariatni imputacijski algoritem. V tem primeru se odločimo za *missRanger*, ki deluje na principu naključnih gozdov, kjer s pomočjo ostalih (znanih) vrednosti spremenljivke in pomožnih spremenljivk modelira ter nadomesti te manjkajoče vrednosti. Uporabili bomo $1000$ gozdov in $100$ iteracij.
+Za imputacijo `Salary` bomo zaradi visokega deleža manjkajočih vrednosti in odvisnosti mankajoče vrednosti od opazovane spremenljivke same uporabili kompleksnejši multivariatni imputacijski algoritem. Upoštevati moramo, da imajo pri tej spremenljivki, samo nekateri izmed tistih z izobrazbo *College*, manjkajoče vrednosti. Odločimo se za imputacijski algortiem imenovan *missRanger*, ki deluje po principu naključnih gozdov, kjer s pomočjo znanih vrednosti spremenljivke in pomožnih spremenljivk modelira ter nadomesti manjkajoče vrednosti. Uporabili bomo $1000$ gozdov in $100$ iteracij, da bodo napovedi čim bolj natančne.
 
 Uvedemo tudi dve novi spremenljivki `Salary_Missing` (če je manjkal podatek o plači) in `churned` (ali je član še aktiven). Ti nama bosta pomagali pri kompleksnejšem oblikovanju skupin v nadaljevanju.
 
@@ -1111,35 +1085,37 @@ final_df <- final_df %>%
   left_join(Customer_Activity_Ag, by = "Loyalty Number")
 ```
 
-Kot smo videli že prej, imajo številni uporabniki pri mnogih atribtuih vrednosti 0 saj gre za t.i. *"Zero inflated" porazdelitev* (porazdelitev s presežnimi ničlami). Zato bi bilo dobro uvesti nove spremenljivke, ki bi merili ali je vrednost člana pri posamezni spremenljivki večja kot nič (se pravi je uporabnik imel neko aktivnost) ali pa je enaka nič (aktivnosti ni bilo). 
+Kot smo videli že prej, imajo številni uporabniki pri mnogih spremenljivkah vrednost 0. Gre za t.i. *"Zero inflated" porazdelitve* (porazdelitve s presežnimi ničlami). Prav zato bi bilo dobro uvesti nove spremenljivke, ki bi merile ali je vrednost člana pri posamezni spremenljivki večja kot nič in je šlo za neko aktivnost, ali pa nasprotno te ni bilo, in je enaka nič.
 
 Končajmo še z glavnim oblikovanjem novih spremenljivk, ki agregirajo posamezne numerične vrednosti in so za primerjavo med skupinami bolj smiselne. 
 
 Za vsako stranko smo torej na podlagi podatkov o posameznih interakcijah izračunali naslednje agregirane spremenljivke: (nekatere nam bodo pomagal kasneje pri uporabi strojnega učenja za segmentacijo)
 
-**1. Skupna aktivnost:**
-- skupno število opravljenih letov,
-- skupna preletena razdalja,
-- skupno število zbranih točk,
-- skupno število porabljenih točk,
-- skupna vrednost porabljenih točk.
 
-**2. Časovna aktivnost:**
-- število različnih mesecev, v katerih je bila stranka aktivna,
-- število mesecev od zadnjega leta.
+1. **Skupna aktivnost:**
+   - skupno število opravljenih letov,
+   - skupna preletena razdalja,
+   - skupno število zbranih točk,
+   - skupno število porabljenih točk,
+   - skupna vrednost porabljenih točk.
 
-**3. Povprečna mesečna aktivnost:**
-Za primerljivost strank z različnim številom aktivnih mesecev smo izračunali povprečne mesečne vrednosti.
+2. **Časovna aktivnost**:
+   - število različnih mesecev, v katerih je bila stranka aktivna,
+   - število mesecev od zadnjega leta.
 
-**4. Indikatorji aktivnosti:**
-Za spremenljivke, pri katerih se pojavljajo ničelne vrednosti, smo dodatno ustvarili binarne indikatorje, ki označujejo, ali je bila določena aktivnost sploh prisotna.
-Indikatorje smo izračunali za lete, preleteno razdaljo, zbrane točke, porabljene točke in vrednost porabljenih točk.
+3. **Povprečna mesečna aktivnost**:
+   - za primerljivost strank z različnim številom aktivnih mesecev smo izračunali povprečne mesečne vrednosti.
 
-**5. Vedenjske spremenljivke:**
-- Če stranka ni zbrala nobene točke, smo vrednost nastavili na 0.
-- Pri strankah brez opravljenih letov smo vrednost nastavili na 0.
+4. **Indikatorji aktivnosti**:
+   - za spremenljivke, pri katerih se pojavljajo ničelne vrednosti, smo dodatno ustvarili binarne indikatorje, ki označujejo, ali je bila določena aktivnost sploh prisotna;
+   - indikatorje smo izračunali za lete, preleteno razdaljo, zbrane točke, porabljene točke in vrednost porabljenih točk.
 
-Poglejmo še porazdelitve vseh novih atributov.
+5. **Spremenljivke, ki merijo prisotnost aktivnosti**:
+   - Če stranka ni zbrala nobene točke, smo vrednost nastavili na 0.
+   - Pri strankah brez opravljenih letov smo vrednost nastavili na 0.
+
+
+Poglejmo še porazdelitve vseh teh, na novo oblikovanih, spremenljivk.
 
 ```{r}
 Customer_Activity_Ag %>%
@@ -1160,15 +1136,15 @@ Customer_Activity_Ag %>%
     avg_distance_per_flight,
     redemption_rate
   ) %>%
-  plot_histogram(ncol = 4L)
+  plot_histogram(ncol = 3L)
 ```
-Vidimo, da so porazdelitve novih, nekaterih agregiranih atributov še vedno asimetrične, trenutno ne bomo uporabili dodatnih transformacij, moramo pa zato biti pozorni katere teste uporabimo (parametrične ali neparametrične). 
+
+Vidimo, da so porazdelitve novih, nekaterih agregiranih spremenljivk še vedno asimetrične, trenutno ne bomo uporabili dodatnih transformacij, moramo pa zato biti pozorni katere teste uporabimo (parametrične ali neparametrične). 
+
 
 ## Analiza osnovih skupin oblikovanih gelde na kvantile
 
-Poglejmo torej ali so prisotne razlike med osnovimi skupinami oblikovanimi glede na kvartile. 
-
-Najprej se lotimo nominalnih spremenljivk. Uporabili *Hi-kvadrat* test, ki je neparametričen, in seveda tudi popravek (FDR) za večkratno testiranje. Stopnjo značilnosti določimo kot $a = 0.10$ oz. $10$%. 
+Poglejmo torej ali so prisotne razlike med osnovimi skupinami oblikovanimi glede na kvartile. Najprej se lotimo nominalnih spremenljivk. Uporabili bomo *Hi-kvadrat* test, ki je neparametričen, in popravek *(FDR)* (False discover rate, delež lažnih odkritij) za večkratno testiranje. To je metoda, s katero pri večkratnih statističnih testiranjih omejimo delež lažnih odkritij, se pravi rezultatov, ki jih nepravilno označimo za statistično značilne. Stopnjo značilnosti določimo kot $a=0.10$ oz. $10$%. 
 
 ```{r}
 # check
@@ -1205,30 +1181,26 @@ for (var in cat_vars) {
   chisq_results[[var]] <- test$p.value
 }
 p_adj_cat <- p.adjust(unlist(chisq_results), method = "fdr")
-kable(p_adj_cat)
+
+kable(as.data.frame(p_adj_cat), 
+      col.names = "p‑vrednost (FDR)",
+      caption = "Tabela p‑vrednosti (Hi-kvadrat test, popravek FDR)",
+      digits = 4)
 ```
 
-Iz tabele vidimo, da obstajajo statistični značilne razlike med nominalnimi spremenljivkami med skupinami pri: `Loyalty Card` (tip/nivo kartice zvestobe), `Education` (izobrazba), `Salary_Missing` (ali je manjkal podatek o plači) in `Marital Status` (zakonski stan). Pri ostalih statistično značilne razlike ni zaznati. 
+Iz tabele p-vrednosti vidimo, da obstajajo statistični značilne razlike med nominalnimi spremenljivkami med skupinami pri: `Loyalty Card` (tip/nivo kartice zvestobe), `Education` (izobrazba), `Salary_Missing` (ali je manjkal podatek o plači) in pogojno `Marital Status` (zakonski stan). Pri ostalih statistično značilne razlike ni zaznati. 
 
-```{r}
-
+```{r fig.width=6, fig.height=9}
 sig_vars <- c("Loyalty Card", "Education", "Salary_Missing", "Marital Status")
-
 plot_list <- list()
 
 for (var in sig_vars) {
-  # za Salary_Missing uporabimo as.factor()
   if (var == "Salary_Missing") {
     p <- ggplot(final_df, aes(x = clv_quartile, fill = as.factor(.data[[var]]))) +
       geom_bar(position = "fill") +
       scale_y_continuous(labels = scales::percent) +
       scale_fill_discrete(labels = c("0" = "Not missing", "1" = "Missing")) +
-      labs(
-        title = "Salary missing",
-        x = NULL,
-        y = "procentage",
-        fill = "sallary"
-      ) +
+      labs(title = "Salary missing", x = NULL, y = "Procentage", fill = "Salary") +
       theme_minimal() +
       theme(
         legend.position = "bottom",
@@ -1240,12 +1212,7 @@ for (var in sig_vars) {
     p <- ggplot(final_df, aes(x = clv_quartile, fill = .data[[var]])) +
       geom_bar(position = "fill") +
       scale_y_continuous(labels = scales::percent) +
-      labs(
-        title = var,
-        x = NULL,
-        y = "Procentage",
-        fill = var
-      ) +
+      labs(title = var, x = NULL, y = "Procentage", fill = var) +
       theme_minimal() +
       theme(
         legend.position = "bottom",
@@ -1254,20 +1221,19 @@ for (var in sig_vars) {
         plot.title = element_text(size = 11, face = "bold")
       )
   }
-  
   plot_list[[var]] <- p
 }
 
-# mreža 2x2
-combined_plot <- (plot_list[[1]] + plot_list[[2]]) / 
-                 (plot_list[[3]] + plot_list[[4]])
-
-combined_plot +
+# vsak graf v svoji vrstici (1 stolpec, 4 vrstice)
+combined_plot <- (plot_list[[1]] / plot_list[[2]] / plot_list[[3]] / plot_list[[4]]) +
   plot_annotation(
     title = "Deleži kategorij po CLV kvartilih (značilne spremenljivke)",
     theme = theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
   )
+
+combined_plot
 ```
+
 Poglejmo še grafičen prikaz teh spremenljivk, katerih vrednosti so statistično značilne med skupinami. 
 
 Pri spremenljivki `Loyalty Card` (nivo kartice zvestobe) vidimo, da v najnižjem CLV kvartilu (Q1) prevladuje kartica Star, Aurora je odsotna. V višjih kvartilih (Q3–Q4) se deleži vseh treh kartic izenačijo. Kartica najvrejetneje dober napovednik vrednosti stranke. Seveda se je potrebno zavedati, da je nivo kartice zvestobe povezan s tem koliko jo stranka uporablja (večja popraba je nagrajena z višjim nivojem).
@@ -1278,7 +1244,7 @@ Pri spremenljivki `Loyalty Card` (nivo kartice zvestobe) vidimo, da v najnižjem
 
 Pri `Martial Status` (zakonski stan) opazimo, da se delež samskih *(Single)* se rahlo znižuje od Q1 proti Q4, delež ločenih *(Divorced)* pa rahlo narašča.
 
-Nadaljujmo še z vedenjskimi spremenljivkami. Predvidevamo lahko, da bodo nekatere med seboj zelo korelirane (tako osnovne kot tiste oblikovane naknadno), tako, da jih odstranimo. Namen je, da ne testiramo in vizualiziramo vse, saj merijo podobne aktivnosti.
+Nadaljujmo še z številskimi vedenjskimi spremenljivkami. Predvidevamo lahko, da bodo nekatere med seboj zelo korelirane (tako osnovne kot tiste oblikovane naknadno), tako, da jih odstranimo. Namen je, da ne testiramo in vizualiziramo vse, saj merijo podobne aktivnosti.
 
 ```{r}
 # agregirane
@@ -1309,7 +1275,7 @@ corrplot(cor_matrix,
          mar = c(0, 0, 2, 0))
 ```
 
-Na podlagi korelacijske matrike (in tabele stopnje korelacije spremenljivk) vidimo, da so nekatere spremenljivke med seboj močno korelirane. Zato izberemo nabor petih spremenljivk, ki merijo različne dimenzije vedenja: `avg_flights_per_month`  (povprečno število letov na mesec), ` avg_distance_per_flight` (povprečna razdalja na let), ` avg_points_accum_per_month`  (povprečno število zbranih točk na mesec), ` redemption_rate`  (stopnja unovčitve točk) in ` total_flights_sum` (vsi leti skupaj).
+Na podlagi korelacijske matrike (in tabele stopnje korelacije spremenljivk) vidimo, da so nekatere spremenljivke med seboj močno korelirane. Cilj je, da izberem spremenljivke, ki imajo čim bolj nekorelirano vrednost z ostalimi, sicer lahko pri algoritmu *k-means* pride do napak. Zato izberemo nabor petih spremenljivk, ki merijo numerično čim bolj različne dimenzije vedenja (aktivnosti): `avg_flights_per_month`  (povprečno število letov na mesec), ` avg_distance_per_flight` (povprečna razdalja na let), ` avg_points_accum_per_month`  (povprečno število zbranih točk na mesec), ` redemption_rate`  (stopnja unovčitve točk) in ` total_flights_sum` (vsi leti skupaj). Zadnjo kljub večji korelaciji z ostalimi ohranimo, saj je pomemben indikator aktivnosti.
 
 ```{r}
 # izbrane spremenljivke
@@ -1391,7 +1357,8 @@ for (i in seq_along(profile_vars_raw)) {
 kable(results_anova, digits = 4, 
       caption = "ANOVA za izbrane vedenjske spremenljivke glede na kvartilno skupino CLV")
 ```
-Kratek povzetek profilov strank po CLV kvartilih:
+
+Poglejmo zdaj še to kako se skupine oblikovane po CLV kvartilih razlikujejo med seboj:
 - Q1 (najnižji CLV): podpovprečne vrednosti pri vseh spremenljivkah razen rahlno nadpovprečno vnovčevanju točk in povprečne razdalje na let. Malo letijo, malo zbirajo točk in prevozijo malo km, a nadpovprečno unovčijo zbrane točke (visoka stopnja unovčitve).
 - Q2 (nizko-srednji): podoben trend kot Q1, ampak nekoliko višje vrednosti (večinoma podpovprečne vrednosti).
 - Q3 (srednje-visoki): nadpovprečne vrednosti pri vseh spremenljivkah razen unovčevanja točk in skupnega števila letov. 
@@ -1399,7 +1366,8 @@ Q4 (najvišji CLV): presenetljivo nižje povprečne vrednosti kot Q3, povprečna
 
 Višji CLV ni povezan z več pogostostjo ali unovčevanjem točk, temveč z višjo "vrednostjo" posameznih letov (razdalja, obseg). Vidimo tudi, da sta si skupini z Q1 (najnižji CLV) in Q2 (nizko-srednji) zelo podobni, mogoče lahko to uporabimo v prihodnji analizi sgmentiranja z strojnim učenjem za določenje števila skupin. Seveda v primeru, če bo optimalno število skupin, drugačno kot tukaj.
 
-Kljub temu, da so na grafu vidne jasne razlike, ne moremo trditi, da gre za statistično značilne razlike. Vendar lahko vseeno uporabimo rezultate za usmiritev in nadaljno razikovanje. 
+Vendar pa kljub temu, da so na grafu vidne jasne razlike, ne moremo trditi, da gre za statistično značilne razlike. Na to nakazuje tabela p - vrednosti, saj hipoteze, da so med skupinami pristone razlike ob $a=0,10$ ne zavrznemo. Vseeno uporabimo rezultate za usmiritev in nadaljno razikovanje. Tokrat smo uporabili Bonferonijev popravek (strožjo kot FDR).  
+
 
 ## Oblikovanje segmentov s pomočjo strojnega učenja in priprava podatkov za analizo skupin
 
@@ -1407,7 +1375,7 @@ Zanimivo bi bilo preveriti, če lahko s pomočjo strojnega učenja določimo sku
 
 Uporabili bomo algoritem *k najbližjih sosedov (k-means)*. To je metoda, ki spada pod nenadzorovano učenje, saj iščemo skrite vzorce v podatkih. V našem primeru s pomočjo Evklidske razdalje, ki meri razdaljo med enotami glede na vrednosti pri posamezni izbrani spremenljivki. Želimo, da so enote v skupini notranjo homogene hkrati pa čim bolj različne med skupinami samimi.
 
-Kot smo videli prej je smiselno zaradi *k-means* algoritma (in Evkliske razdalje), ki predpostavlja iste porazdelitve in oblike skupin, uporabiti logaritmirane vrednosti (desno asimetričnih spremenljivk) in jih skalirati (standardizirati).  
+Kot smo videli prej je smiselno zaradi *k-means* algoritma (in Evklidske razdalje), ki predpostavlja iste porazdelitve in oblike skupin, uporabiti logaritmirane vrednosti (desno asimetričnih spremenljivk) in jih skalirati (standardizirati).  
 
 ```{r}
 # izbrane spremenljivke, iste kot za ANOVO
@@ -1456,6 +1424,7 @@ wss <- sapply(2:10, function(k) {
 })
 plot(2:10, wss, type = "b", main = "Elbow")
 ```
+
 Za določitev števila skupin lahko uporabimo princip iskanja komolca (*elbow plot*), kjer iščemo prelom, ta se pojavi med 3 in 4. Zaradi ugotovitve, da sta si bili skupini Q1 (najnižji CLV) in Q2 (nizko srednj CLV) v prejšnjem podpoglavju zelo podobni pri vseh izbranih vedenjskih spremenljivkah, izberemo torej 3 skupine. 
 
 Poglejmo še povprečne vrednosti izbranih vedenjskih spremenljivk na originalni (nelogaritmirani sklali) po skupinah oblikovanih s *k-means* algoritmom.
@@ -1478,9 +1447,7 @@ final_df$segment_km <- NA_integer_
 final_df$segment_km[kmeans_data_idx] <- km_result$cluster
 ```
 
-
 ```{r}
-# ---- Profilni graf na originalnih (nelogaritmiranih) spremenljivkah ----
 # Uporabimo iste spremenljivke kot za k-means, vendar originalne
 profile_vars_orig <- c(
   "avg_flights_per_month",
@@ -1509,7 +1476,6 @@ slovenska_imena_orig <- c(
   "total_flights_sum"          = "Skupno število letov"
 )
 
-# ---- Profilni graf ----
 ggplot(profile_orig, aes(x = spremenljivka, y = z_vrednost, 
                          color = as.factor(segment_km), group = as.factor(segment_km))) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", size = 0.8) +
@@ -1571,7 +1537,9 @@ for (i in seq_along(all_test_vars)) {
 kable(anova_table, digits = 6, caption = "ANOVA – razlike med K‑means segmenti (Bonferroni)")
 ```
 
-Preverimo še, če se skupine med seboj razlikujejo po ostalih spremenljivkah. Prvih 5 spremenljivk (`avg_flights_per_month` (Povpr. letov na mesec), `avg_distance_per_flight`(Povpr. razdalja na let), `avg_points_accum_per_month`(Povpr. zbranih točk na mesec), `redemption_rate`(Stopnja unovčitve točk), `total_flights_sum`(Skupno število letov)) je statistično značilnih, ampak je to zgolj preverjanje ali algoritem deluje prav, saj so bile le te spremenljivke uporabljene za segmentacijo. `CLV` in `Salary` se med skupinami ne razlikujeta statistično značilno. Spremenljivke `active_months`, `total_distance`, `points_accumulated`, `points_redeemed` pa sem skupinami razlikujejo statistično značilno, sicer gre za nekoliko korelirane spremenljivke z tistimi uporabljenimi za segmentiranje, a vseeno je to lahko zanimiva informacija.
+Preverimo še, če se skupine med seboj razlikujejo po ostalih spremenljivkah. Prvih 5 spremenljivk (`avg_flights_per_month` (Povpr. letov na mesec), `avg_distance_per_flight`(Povpr. razdalja na let), `avg_points_accum_per_month`(Povpr. zbranih točk na mesec), `redemption_rate`(Stopnja unovčitve točk), `total_flights_sum`(Skupno število letov)) se sicer med skupinam statistično značilno razlikuje, ampak je to zgolj preverjanje ali algoritem deluje prav, saj so bile le te spremenljivke uporabljene za segmentacijo. Bolj zanimivo je, da se povprečne vrednosti `CLV` in `Salary` med skupinami ne razlikujeta statistično značilno. Spremenljivke `active_months`, `total_distance`, `points_accumulated`, `points_redeemed` pa se med skupinami razlikujejo statistično značilno. Sicer gre tudi tukaj za nekoliko korelirane spremenljivke s tistimi uporabljenimi za segmentiranje, a vseeno je to zanimiva informacija.
+
+Poglejmo še kako se dobljene skupine razlikujejo po nominalnih spremenljivkah. 
 
 ```{r}
 # kategorične spremenljivke za testiranje
@@ -1587,12 +1555,16 @@ for (var in cat_vars_seg) {
   chisq_seg_results[[var]] <- test$p.value
 }
 
-# FDR popravek 
-p_adj_seg_cat <- p.adjust(unlist(chisq_seg_results), method = "fdr")
-kable(p_adj_seg_cat, caption = "Hi‑kvadrat test – razlike med segmenti (kategorične spremenljivke)")
-```
+# Prepreči eksponentni zapis (heca nekaj)
+options(scipen = 999)
 
-Poglejmo še kako se dobljene skupine razlikujejo po nominalnih spremenljivkah. 
+# Izračun FDR-popravljenih p‑vrednosti
+p_adj_cat <- p.adjust(unlist(chisq_seg_results), method = "fdr")
+
+kable(as.data.frame(p_adj_cat), 
+      col.names = "p‑vrednost (FDR)",
+      caption = "Tabela p‑vrednosti (Hi‑kvadrat test, popravek FDR)")  
+```
 
 ```{r}
 # Značilne kategorične spremenljivke med segmenti
@@ -1647,11 +1619,34 @@ for (var in sig_cat_vars) {
 combined_seg <- wrap_plots(plot_list_seg, ncol = 2)
 print(combined_seg)
 ```
-TODO: komentar
 
-## Zaključki
-TODO
+Iz Hi-kvadrat testa (tabela) se je pokazalo, da se segmenti statistično značilno razlikujejo tudi po spremenljivkah `Enrollment Type` (način vstopa v program) in `churned` (odliv). Prav tako to jasno vidimo na grafu.
 
+Pri spremenljivki `Enrollment Type` opazimo, da je delež strank, vpisanih preko promocije 2018, največji v segmentu `2` (najbolj aktivna, najvišje vredna skupina), najmanjši pa v segmentu `3`. To je skladno z ugotovitvijo, da so promocijsko pridobljene stranke v povprečju bolj aktivne letalke.
+
+Precej bolj izrazite so razlike pri spremenljivki `churned`. Segment `1` ima zelo visoko stopnjo odliva (skoraj 60 %), segment `3` zmerno (okoli 25 %), segment `2` pa izjemno nizko (le nekaj odstotkov). Pri slednjih gre torej za jedro najbolj zvestih strank. Vzorec je smiseln glede na profil segmentov: manj aktivne stranke (segment `1`) najlažje zapustijo program, najbolj aktivne (segment `2`) pa ostajajo. To nakazuje, da bi bilo smiselno retencijske ukrepe usmeriti predvsem v segment `1`.
+
+
+## Zaključki in priporočila
+
+Analiza segmentacije strank z visoko vrednostjo je pokazala pomembno razhajanje (a tudi nekatere podobnosti) med dvema pristopoma: segmentacijo na podlagi neposredne vrednostne mere (`CLV`) in segmentacijo na podlagi vedenjskih spremenljivk (*k-means*). Skupini, oblikovani po CLV kvartilih, in skupine, oblikovane s k-means algoritmom na podlagi vedenja, se le delno prekrivajo (`CLV` in `Salary` se med k-means segmenti ne razlikujeta značilno). *Chen, Liu, Zheng in Li (2023)* opozarjajo, da RFM (Recency, Frequency in Monetary Value oziroma nedavnost, pogostost in denarna vrednost) modeli temeljijo na pretekli transakcijski aktivnosti, medtem ko je CLV usmerjen v prihodnost in implicitno povezan z RFM, a ne enak konceptu. Naša ugotovitev, da najvišji CLV kvartil (Q4) ni nujno enak najbolj aktivnemu vedenjskemu segmentu smo opazili tudi na našem primeru (v literaturi že znano).
+
+Druga ključna ugotovitev je nizka stopnja vnovčitve točk (`redemption_rate`) pri strankah z najvišjim CLV (Q4) in pri vedenjskem segmentu z visoko aktivnostjo (segment 2), medtem ko imajo stranke z nižjim CLV in nizko aktivnostjo relativno višjo stopnjo vnovčitve. Ta vzorec je skladen z ugotovitvami *Goić, Montoya in Troncoso (2025)*, ki na podatkih letalskega programa zvestobe pokažejo, da prav intenzivni, pogosti letalci pogosto kopičijo velike količine točk, ki jih sorazmerno redkeje unovčijo, avtorji pa poudarjajo, da je za zmanjšanje te vrzeli učinkoviteje spodbujati pogostejše, manjše vnovčitve kot pa ponujati zgolj nagrade, ki zahtevajo veliko število točk. Podobno *Danaher, Sajtos in Danaher (2020)* na longitudinalnih podatkih programa zvestobe pokažejo, da vnovčitev nagrade člane spodbudi k povečanju nakupne pogostosti in deleža potrošnje znotraj programa, kar članom pomaga preiti iz manj aktivnega v bolj aktivno "stanje". Slednje odpira vprašanje, ali bi bolj dostopne oz. pogostejše priložnosti za vnovčitev za najvrednejši segment (Q4/segment 2) povečale njihovo zavzetost in dolgoročno zvestobo, namesto da nevnovčene točke obravnavamo zgolj kot "prihranek" podjetja.
+
+Iz tega izhajajo naslednja priporočila za optimizacijo programa zvestobe:
+
+1. **Ločeno obravnavanje CLV- in vedenjske segmentacije.** Ker se skupini ne prekrivata popolnoma, priporočamo, da se marketinške akcije ne načrtujejo zgolj na podlagi ene same segmentacijske sheme, temveč se kombinirajo obe perspektivi – vrednostna (CLV) za določanje prioritete vlaganja virov in vedenjska (k-means) za določanje vsebine in časa komunikacije. Lahko pa pri obeh izhajamo iz 3 skupin, ki so se izkazale za optimalne (pri 4 skupinah sta si dve vedenjsko zelo podobni).
+
+2. **Spodbujanje pogostejših, manjših vnovčitev pri visoko aktivnih strankah.** Glede na to, da najbolj aktivni uporabniki (visoko `total_flights_sum`, visoka `avg_distance_per_flight`) najmanj vnovčujejo točke, bi uvedba dodatnih, lažje dosegljivih nagrad lahko povečala pogostost vnovčitve in s tem angažiranost teh strank, saj *Goić et al. (2025)* ugotavljajo, da pogostejše vnovčitve bolj učinkovito deluje kot dražje, redkeje dosegljive nagrade, *Danaher et al. (2020)* pa dodajajo, da vnovčitev sama po sebi spodbuja nadaljnjo aktivnost člana.
+
+3. **Ciljno spodbujanje segmenta Q1–Q2 (nizek CLV, a razmeroma visoka stopnja vnovčitve).** Te stranke aktivno izkoriščajo ugodnosti programa, a imajo nizko skupno vrednost – primerne so za akcije, ki spodbujajo pogostejše letenje (na primer bonus točke za dodatne lete), saj gre za segment, ki se najbolj odziva na spodbude za povečanje frekvence.
+
+4. **Nadgradnja statusa kartice zvestobe kot napovednika vrednosti.** Ker je `Loyalty Card` statistično značilno povezana s CLV kvartilom, priporočamo nadaljnjo analizo, ali bi dodaten (peti) nivo kartice ali prilagojene ugodnosti znotraj obstoječih nivojev dodatno diferencirale najvišji segment.
+
+Pri vsem tem pa ne smemo pozabiti, da je omejitev naše analize, da gre za presečne (obstoječe) podatke in tako ne moremo sklepati o vzročnosti med vedenjem in vrednostjo stranke, temveč zgolj o korelacijskih vzorcih. Zato bi bila potrebna posebno oblikovana študija, kjer bi preverjali znanstveno hipotezo oziroma hipoteze.
+
+
+\newpage
 
 # (Patricija) Napovedovanje odliva strank oziroma odpovedi ter predlaganje ----
 # možnih ukrepov za njihovo zadržanje
@@ -2108,6 +2103,7 @@ model_data <- model_data %>%
 ```
 
 
+<<<<<<< HEAD
 ```{r}
 glimpse(model_data)
 summary(model_data)
@@ -2271,3 +2267,114 @@ churn. Ker je namen modela podpora ukrepom za zadržanje strank, bi bilo zato
 smiselno preveriti tudi druge klasifikacijske pragove. Prag 0,5 je namreč lahko 
 preveč strog, zaradi česar model spregleda precejšen delež potencialno 
 odhajajočih strank.
+=======
+\newpage
+
+# Viri
+
+1. članek/vir (osnove customer churn): Customer Churn Prediction: A Systematic Review of Recent Advances, Trends, and Challenges in Machine Learning and Deep Learning
+*Imani, M., Joudaki, M., Beikmohammadi, A., & Arabnia, H. R. (2025)*
+Link: [1.clanek] (www.mdpi.com/2504-4990/7/3/105?utm_source=chatgpt.com)
+
+2. članek/vir: An asymmetrical approach to understanding con gurations of customer loyalty in the airline industry
+*Catherine Prenticea, Sandra Maria Correia Loureirob*
+Link: [2.clanek] (https://www.sciencedirect.com/science/article/pii/S0969698917301789?fr=RR-1&ref=cra_js_challenge)
+
+3. članek/vir: Key drivers of passenger loyalty: A case of Frankfurt–Istanbul flights. (2016).
+*Journal of Air Transport Management*
+Link: [3.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0969699715300120?utm_source=chatgpt.com)
+
+4. članek/vir: Frequent flyer programs in academic studies: A literature review of research progress since 2000. (2025).
+*Journal of Air Transport Management.*
+Link: [4.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0969699725001838?utm_source=chatgpt.com)
+
+5. članek/vir: In Pursuit of Enhanced Customer Retention Management: Review, Key Issues, and Future Directions
+*Ascarza, E., Neslin, S. A., Netzer, O., et al. (2018)*
+Link: [5.clanek]
+(https://business.columbia.edu/sites/default/files-efs/pubfiles/25780/ascarza_et_al_choice_symposium.pdf)
+
+6. članek/vir: Beyond Accuracy: What Data Quality Means to Data Consumers. (2015) 
+*Richard Y. Wang & Diane M. Strong*
+Link: [6.clanek]
+(https://www.tandfonline.com/doi/abs/10.1080/07421222.1996.11518099)
+-> Kakovost podatkov
+
+7. članek/vir: Data Fusion. ACM Computing Surveys, 41(1), Article 1.
+*Bleiholder, J., & Naumann, F. (2008)*
+Link: [7.clanek]
+(https://dl.acm.org/doi/abs/10.1145/1456650.1456651)
+-> Strategija razreševanja konfliktov in utemeljitev, zakaj brez dodatnih kriterijev izbira ni upravičena.
+
+8. članek/vir:Data Cleaning of Data Streams
+*Restat, V., Rodenhausen, N., Antonin, C., & Störl, U. (2025).*
+Link: [8.clanek]
+(https://arxiv.org/abs/2507.20839)
+
+9. članek/vir: Data Cleaning: Problems and Current Approaches
+*Rahm, E., & Do, H. H. (2000).*
+Link: [9.clanek]
+(https://www.researchgate.net/publication/220282831_Data_Cleaning_Problems_and_Current_Approaches)
+
+10. članek/vir (Manca): The Long-Term Impact of Loyalty Programs on Consumer Purchase Behavior and Loyalty. Journal of Marketing
+*Liu, Y. (2007).*
+Link: [10.clanek]
+(https://www.researchgate.net/publication/237396598_The_Long-Term_Impact_of_Loyalty_Programs_on_Consumer_Purchase_Behavior_and_Loyalty)
+
+11. članek/vir (Manca): Understanding the Effect of Customer Relationship Management Efforts on Customer Retention and Customer Share Development. Journal of Marketing
+*Verhoef, P. C. (2003).*
+Link: [11.clanek]
+(https://www.researchgate.net/publication/242113836_Understanding_the_Effect_of_Customer_Relationship_Management_Efforts_on_Customer_Retention_and_Customer_Share_Development)
+
+12. članek/vir (Manca): Loyalty Programmes: Current Knowledge and Research Directions. International Journal of Management Reviews
+*Dorotic, M., Bijmolt, T. H. A., & Verhoef, P. C. (2011).*
+Link: [12.clanek]
+(https://www.researchgate.net/publication/229915137_Loyalty_Programmes_Current_Knowledge_and_Research_Directions)
+
+13. članek/vir (Manca): Perceived benefits of loyalty programs: Scale development and implications for relational strategies. Journal of Business Research
+*Mimouni-Chaabane, A., & Volle, P. (2009).*
+Link: [13.clanek]
+(https://www.sciencedirect.com/science/article/abs/pii/S0148296309000198)
+
+14. članek/vir (Manca): Review of the theoretical underpinnings of loyalty programs. Journal of Consumer Psychology
+*Henderson, C. M., Beck, J. T., & Palmatier, R. W. (2011).*
+Link: [14.clanek]
+(https://www.semanticscholar.org/paper/Review-of-the-theoretical-underpinnings-of-loyalty-Henderson-Beck/61ee71d3519da2034b51d2d03132916b2f351300)
+
+15. članek/vir (Tristan): Power laws, Pareto distributions, and Zipf's law
+*Newman, M. E. J. (2004).*
+*Contemporary Physics, 46(5), 323–351.*
+Link: [15.clanek]
+(https://arxiv.org/abs/cond-mat/0412004)
+
+16. članek/vir (Tristan): Customer Lifetime Value as the Basis of Customer Segmentation: Issues and Challenges
+*Katherine N. Lemon & Tanya Mark (2008).*
+*Journal of Relationship Marketing, 5(2–3), 55–69.*
+Link: [16.clanek]
+(https://doi.org/10.1300/J366v05n02_04)
+
+17. članek/vir (Tristan): Benefits of quantile regression for the analysis of customer lifetime value in a contractual setting: An application in financial services
+*Benoit, D. F., & Van den Poel, D. (2009).*
+*Expert Systems with Applications, 36(7), 10475–10484.*
+Link: [17.clanek]
+(https://doi.org/10.1016/j.eswa.2009.01.031)
+ 
+18. članek/vir (Tristan): Estimating travellers' value when purchasing auxiliary services in the airline industry based on the RFM model
+*Chen, Y., Liu, L., Zheng, D., & Li, B. (2023).*
+*Journal of Retailing and Consumer Services, 74, 103433.*
+Link: [18.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0969698923001807)
+
+19. članek/vir (Tristan): Breakage analysis for profitability management in high-value, low-frequency loyalty programs
+*Goić, M., Montoya, R., & Troncoso, I. (2025).*
+*International Journal of Research in Marketing, 42(2), 450–466.*
+Link: [19.clanek]
+(https://www.sciencedirect.com/science/article/pii/S0167811624000909)
+
+20. članek/vir (Tristan): Tactical use of rewards to enhance loyalty program effectiveness
+*Danaher, P. J., Sajtos, L., & Danaher, T. S. (2020).*
+*International Journal of Research in Marketing, 37(3), 505–520.*
+Link: [20.clanek]
+(https://doi.org/10.1016/j.ijresmar.2020.02.005)
+>>>>>>> f8c19362f89c22367d53cda8df061fef51ec536b
