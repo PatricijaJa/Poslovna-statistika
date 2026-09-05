@@ -2103,7 +2103,6 @@ model_data <- model_data %>%
 ```
 
 
-<<<<<<< HEAD
 ```{r}
 glimpse(model_data)
 summary(model_data)
@@ -2267,7 +2266,7 @@ churn. Ker je namen modela podpora ukrepom za zadržanje strank, bi bilo zato
 smiselno preveriti tudi druge klasifikacijske pragove. Prag 0,5 je namreč lahko 
 preveč strog, zaradi česar model spregleda precejšen delež potencialno 
 odhajajočih strank.
-=======
+
 \newpage
 
 # Viri
@@ -2377,4 +2376,3 @@ Link: [19.clanek]
 *International Journal of Research in Marketing, 37(3), 505–520.*
 Link: [20.clanek]
 (https://doi.org/10.1016/j.ijresmar.2020.02.005)
->>>>>>> f8c19362f89c22367d53cda8df061fef51ec536b
