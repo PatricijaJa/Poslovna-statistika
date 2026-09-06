@@ -558,6 +558,39 @@ Pri analizi efektivnosti promocijskih kampanj je nujno upoštevati več ključni
 ## 4. UČINKOVITOST 2018 PROMOCIJE (primerjava skupin)
 ## -------------------------------------------------------------------------
 
+Customer_Activity <- Customer_Flight_Activity_Clean %>%
+  group_by(`Loyalty Number`) %>%
+  summarise(
+    total_flights_sum    = sum(`Total Flights`, na.rm = TRUE),
+    total_distance       = sum(Distance, na.rm = TRUE),
+    points_accumulated   = sum(`Points Accumulated`, na.rm = TRUE),
+    points_redeemed      = sum(`Points Redeemed`, na.rm = TRUE),
+    dollar_cost_redeemed = sum(`Dollar Cost Points Redeemed`, na.rm = TRUE),
+    active_months        = n_distinct(paste(Year, Month)),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    redemption_rate       = if_else(points_accumulated > 0,
+                                     points_redeemed / points_accumulated, 0),
+    avg_flights_per_month = total_flights_sum / active_months
+  )
+
+df <- Customer_Loyalty_History %>%
+  left_join(Customer_Activity, by = "Loyalty Number") %>%
+  mutate(
+    is_promo_2018 = `Enrollment Type` == "2018 Promotion",
+    churned = !is.na(`Cancellation Year`)
+  )
+
+dt <- Customer_Flight_Activity_Clean %>%
+  left_join(Customer_Loyalty_History, by = "Loyalty Number") %>%
+  mutate(
+    redemption_rate = if_else(`Points Accumulated` > 0,
+                                     `Points Redeemed` / `Points Accumulated`, 0))
+
+dt$tenure_months <- (dt$Year - dt$`Enrollment Year`) * 12 + 
+                     (dt$Month - dt$`Enrollment Month`) + 1
+
 # Opisna statistika po skupinah
 t1 <- df %>%
   group_by(`Enrollment Type`) %>%
